@@ -321,11 +321,8 @@ class Class_CONTR():
     ''' There are 2 history tables of FUT -
     file_path_DATA  - file data from terminal QUIK
     db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
-    db_path_FUT_arc - TABLE archiv,   ask/bid for period  (TF = 60 sec)
-    TABLE total_pack_archiv should update one time per DAY
-    TABLE total_pack_today  should update one time per MINUTE
     '''
-    def __init__(self, file_path_DATA, db_path_FUT):
+    def __init__(self, file_path_DATA, db_path_FUT, log_path):
         #
         self.file_path_DATA  = file_path_DATA    # path file DATA
         self.term            = Class_TERM(self.file_path_DATA)
@@ -335,25 +332,55 @@ class Class_CONTR():
         #
         self.hist_fut = []   # массив котировок фьючей hist 60 s  (today)
         #
+        # init LOGger
+        self.log  = Class_LOGGER(log_path)
+        self.log.wr_log_info('*** START ***')
+#=======================================================================
+def init_cntr(cntr):
+    #--- init FUT cntr.data_fut & cntr.account -------------
+    rq  = get_table_data(cntr)
+    if rq[0] != 0:
+        err_msg = 'init_cntr => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.PopupError('Error !', err_msg)
+        return [1, err_msg]
+
+    print('\ninit_cntr - OK')
+    return [0, 'OK']
+#=======================================================================
+def get_table_data(cntr):
+    # read table DATA / init cntr.data_fut & cntr.account
+    rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
+    if rq[0] == 0:
+        cntr.term.str_in_file = rq[1]
+        #print('db_FUT_data.get_table_db_with(data) \n', rq[1])
+        rq  = cntr.term.parse_str_in_file()
+        if rq[0] != 0:
+            err_msg = 'get_table_data...parse_str_data_fut => ' + rq[1]
+            return [1, err_msg]
+    else:
+        err_msg = 'get_table_db_with(data) ' + rq[1]
+        return [1, err_msg]
+    return [0, 'ok']
 #=======================================================================
 def main():
-
     # init program config
-    name_trm, file_path_DATA, log_path = '', '', ''
-    db_path_FUT = 'term_today.sqlite'
+    db_path_FUT, name_trm, file_path_DATA, log_path = 'term_today.sqlite', '', '', ''
+
     path_DB  = Class_SQLite(db_path_FUT)
     rq  = path_DB.get_table_db_with('cfg_SOFT')
     if rq[0] != 0:
         print('Can not read DB => term_today.sqlite !')
+        sg.PopupError('Can not read DB => term_today.sqlite !')
         return
     for item in rq[1]:
         if item[0] == 'titul'         : name_trm        = item[1]
         if item[0] == 'path_file_DATA': file_path_DATA  = item[1]
         if item[0] == 'path_file_LOG' : log_path        = item[1]
 
-    # init LOGger
-    log  = Class_LOGGER(log_path)
-    log.wr_log_info('*** START ***')
+    # init CONTR
+    cntr = Class_CONTR(file_path_DATA, db_path_FUT, log_path)
+    init_cntr(cntr)
 
     # init MENU
     menu_def = [
@@ -363,7 +390,7 @@ def main():
                 ['Exit', 'Exit']
                 ]
     tab_BALANCE =  [
-                    [sg.T('  -9999.99', text_color='red', font='Helvetica 48', key='txt_bal')],
+                    [sg.T('{: ^12}'.format(str(cntr.term.account.acc_profit)), font='Helvetica 48', key='txt_bal')],
                    ]
 
     def_txt, frm = [], '{: <15}  => {: ^15}\n'
@@ -386,28 +413,28 @@ def main():
 
     window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
 
-    # init CONTR
-    cntr = Class_CONTR(file_path_DATA, db_path_FUT)
-
     mode = 'auto'
     stroki = ['','','','','']
+
     # main cycle   -----------------------------------------------------
     while True:
         if mode == 'auto':
-            event, values = window.Read(timeout=3000)  # period 3 sec
+            event, values = window.Read(timeout=3000 )  # period 3 sec
         else:
             event, values = window.Read(timeout=30000)  # period 30 sec)
-        print('event = ', event, ' ..... values = ', values)
+        #print('event = ', event, ' ..... values = ', values)
 
         if event is None            : break
         if event == 'Exit'          : break
         if event == 'auto'          : mode = 'auto'
         if event == 'manual'        : mode = 'manual'
         if event == 'About...'      :
-            #window.FindElement('txt_bal').Update('  00000.00', text_color='green')
-            window.FindElement('txt_bal').Update('{: ^12}'.format('00000.00'), text_color='green')
+            window.FindElement('txt_bal').Update('{: ^12}'.format(str(cntr.term.account.acc_profit)), text_color='green')
         if event == '__TIMEOUT__'   :
-            pass
+            txt_frmt = "%H:%M:%S   %d.%m.%Y"
+            stroki[0] = time.strftime(txt_frmt, time.localtime())
+
+        window.FindElement('txt_data').Update(''.join(stroki))
 
     return
 #=======================================================================
