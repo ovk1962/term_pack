@@ -19,12 +19,12 @@ else:
     import PySimpleGUI27 as sg
 #=======================================================================
 class Class_LOGGER():
-    def __init__(self):
+    def __init__(self, path_log):
         #self.logger = logging.getLogger(__name__)
         self.logger = logging.getLogger('__main__')
         self.logger.setLevel(logging.INFO)
         # create a file handler
-        self.handler = logging.FileHandler('_logger.log')
+        self.handler = logging.FileHandler(path_log)
         self.handler.setLevel(logging.INFO)
         # create a logging format
         #self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -335,11 +335,27 @@ class Class_CONTR():
         #
         self.hist_fut = []   # массив котировок фьючей hist 60 s  (today)
         #
-        self.log  = Class_LOGGER()
-        self.log.wr_log_info('*** START ***')
 #=======================================================================
 def main():
-    name_trm = 'TRM_TODAY_1.00'
+
+    # init program config
+    name_trm, file_path_DATA, log_path = '', '', ''
+    db_path_FUT = 'term_today.sqlite'
+    path_DB  = Class_SQLite(db_path_FUT)
+    rq  = path_DB.get_table_db_with('cfg_SOFT')
+    if rq[0] != 0:
+        print('Can not read DB => term_today.sqlite !')
+        return
+    for item in rq[1]:
+        if item[0] == 'titul'         : name_trm        = item[1]
+        if item[0] == 'path_file_DATA': file_path_DATA  = item[1]
+        if item[0] == 'path_file_LOG' : log_path        = item[1]
+
+    # init LOGger
+    log  = Class_LOGGER(log_path)
+    log.wr_log_info('*** START ***')
+
+    # init MENU
     menu_def = [
                 ['Mode', ['auto', 'manual', ],],
                 ['Test', ['Test SQL',  ['SQL tbl DATA', 'SQL tbl TODAY', ],],],
@@ -347,17 +363,22 @@ def main():
                 ['Exit', 'Exit']
                 ]
     tab_BALANCE =  [
-                    [sg.T('-9999.99',  font='Helvetica 48',
+                    [sg.T('-9999.99', text_color='red',  font='Helvetica 48',
                         justification='right', text_color=None, key='txt_bal')],
                    ]
+
+    def_txt, frm = [], '{: <15}  => {: ^15}\n'
+    def_txt.append(frm.format('path_file_DATA', file_path_DATA) )
+    def_txt.append(frm.format('path_db_FUT'   , db_path_FUT)    )
+    def_txt.append(frm.format('path_file_LOG' , log_path)       )
+
     tab_DATA    =  [
                     [sg.Multiline(
-                        default_text='String 01\nString 02\nString 03\nString 04\nString 05',
+                        default_text=''.join(def_txt),
                         size=(50, 5), key='txt_data', autoscroll=True)],
                    ]
-    #-------------------------------------------------------------------
-    # Display data in a table format
-    #-------------------------------------------------------------------
+
+    # Display data
     sg.SetOptions(element_padding=(0,0))
 
     layout = [
@@ -383,8 +404,10 @@ def main():
         if event == 'manual'        : mode = 'manual'
         if event == 'About...'      :
             window.FindElement('txt_bal').Update('00000.00')
+        if event == '__TIMEOUT__'   :
+            pass
 
-
+    return
 #=======================================================================
 if __name__ == '__main__':
     import sys
