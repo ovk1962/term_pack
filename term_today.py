@@ -372,9 +372,8 @@ def main():
     def_txt.append(frm.format('path_file_LOG' , log_path)       )
 
     tab_DATA    =  [
-                    [sg.Multiline(
-                        default_text=''.join(def_txt),
-                        size=(50, 5), key='txt_data', autoscroll=True)],
+                    [sg.Multiline( default_text=''.join(def_txt),
+                        size=(50, 5), key='txt_data')],
                    ]
 
     # Display data
