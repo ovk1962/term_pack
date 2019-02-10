@@ -363,9 +363,128 @@ def get_table_data(cntr):
         return [1, err_msg]
     return [0, 'ok']
 #=======================================================================
+def read_parse_data(cntr):
+    tm_s = time.localtime().tm_sec
+    if ((tm_s % 3) == 0):                       # 3 seconds period
+        # read DATA file
+        rq = cntr.term.rd_term()
+        if rq[0] != 0:
+            # there is not new DATA
+            return [1, rq[1]]
+
+        # parse string
+        rq = cntr.term.parse_str_in_file()
+        if rq[0] != 0:
+            err_msg = '_parse_str_in_file_(_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+
+        # rewrite table DATA
+        duf_list = []
+        for j, jtem in enumerate(cntr.term.str_in_file):
+            buf = (jtem,)
+            duf_list.append(buf)
+        rq = cntr.db_FUT_data.rewrite_table('data_FUT', duf_list, val = '(?)')
+        if rq[0] != 0:
+            err_msg = 'rewrite_table(_data_FUT_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+
+        # prepair string for table hist_FUT_today
+        rq = cntr.term.prpr_str_hist()
+        if rq[0] != 0:
+            err_msg = 'prpr_str_hist(_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+
+        # add new string to table hist_FUT_today
+        duf_list = [(cntr.term.dt_data, cntr.term.str_for_hist)]
+        rq = cntr.db_FUT_data.write_table_db('hist_FUT_today', duf_list)
+        if rq[0] != 0:
+            err_msg = 'write_table_db(_hist_FUT_today_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+    else:
+        return [100, 'waiting ...']
+    return [0, 'OK']
+#=======================================================================
+def convert_sql_txt(cntr, arr):
+    arr_hist = arr
+    hist_out = []
+    if len(arr_hist) != 0:
+        hist_out = []
+        hist_out_report = []
+        hist_out_archiv = []
+        buf_index  = buf_60_sec = 0
+        buf_date_time = ''
+        #
+        last_day = arr_hist[-1][1].split(' ')[0]
+        term_dt = arr_hist[-1][1].split('|')[0]
+        dtt = datetime.strptime(str(term_dt), "%d.%m.%Y %H:%M:%S")
+        #
+        for item in arr_hist:
+            if last_day in item[1]:
+                str_bf = []
+                # convert TUPLE in LIST & delete last '|'
+                str_bf = ''.join(list(item[1])[0:-1])
+                hist_out.append(str_bf)
+
+                if len(hist_out_report) == 0:
+                    hist_out_report.append('Start = > ' + item[1].split('|')[0])
+                else:
+                    if (item[0] - buf_index) > 61:
+                        hist_out_report.append('Delay from ' + buf_date_time + ' to ' + item[1].split('|')[0].split(' ')[1])
+                buf_index = item[0]
+                buf_date_time = item[1].split('|')[0].split(' ')[1]
+
+                if len(hist_out_archiv) == 0:
+                    hist_out_archiv.append(item)
+                    buf_60_sec = item[0]
+                else:
+                    if (item[0] - buf_60_sec) > 59:
+                        hist_out_archiv.append(item)
+                        buf_60_sec = item[0]
+        #
+        str_month = str(dtt.month)
+        if dtt.month < 10:       str_month = '0' + str(dtt.month)
+        str_day = str(dtt.day)
+        if dtt.day < 10:           str_day = '0' + str(dtt.day)
+        #
+        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_report' + '.txt'
+        cntr.log.wr_log_info('Report export for ' + path_file)
+        if os.path.exists(path_file):  os.remove(path_file)
+        f = open(path_file,'w')
+        for item in hist_out_report:   f.writelines(item + '\n')
+        f.close()
+        #
+        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_archiv_fut' + '.csv'
+        cntr.log.wr_log_info('Archiv for ' + path_file)
+        if os.path.exists(path_file):  os.remove(path_file)
+        f = open(path_file,'w')
+        for item in hist_out_archiv:   f.writelines(str(int(item[0])) + ';' + item[1] + '\n')
+        f.close()
+        #
+        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_hist_ALFA' + '.txt'
+        if os.path.exists(path_file):  os.remove(path_file)
+        f = open(path_file,'w')
+        for item in hist_out:          f.writelines(item + '\n')
+        f.close()
+        cntr.log.wr_log_info('Hist export for ' + path_file)
+#=======================================================================
+def convert(cntr):
+    cntr.log.wr_log_info('convert_sql_txt')
+    rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
+    if rq[0] == 0:
+        convert_sql_txt(cntr, rq[1])
+        sg.Popup('OK !', 'Check info in log file !')
+    else:
+        cntr.log.wr_log_error(rq[1])
+        sg.Popup('ERROR !', rq[1])
+#=======================================================================
 def main():
     # init program config
-    db_path_FUT, name_trm, file_path_DATA, log_path = 'term_today.sqlite', '', '', ''
+    dirr = os.path.abspath(os.curdir)
+    db_path_FUT, name_trm, file_path_DATA, log_path = dirr + '\\DB\\term_today.sqlite', '', '', ''
 
     path_DB  = Class_SQLite(db_path_FUT)
     rq  = path_DB.get_table_db_with('cfg_SOFT')
@@ -376,7 +495,7 @@ def main():
     for item in rq[1]:
         if item[0] == 'titul'         : name_trm        = item[1]
         if item[0] == 'path_file_DATA': file_path_DATA  = item[1]
-        if item[0] == 'path_file_LOG' : log_path        = item[1]
+        if item[0] == 'path_file_LOG' : log_path        = dirr + item[1]
 
     # init CONTR
     cntr = Class_CONTR(file_path_DATA, db_path_FUT, log_path)
@@ -384,8 +503,8 @@ def main():
 
     # init MENU
     menu_def = [
-                ['Mode', ['auto', 'manual', ],],
-                ['Test', ['Test SQL',  ['SQL tbl DATA', 'SQL tbl TODAY', ],],],
+                ['Mode',    ['auto', 'manual', ],],
+                ['Service', ['Test SQL', ['SQL tbl DATA', 'SQL tbl TODAY', ], ['Convert']],],
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
@@ -420,9 +539,9 @@ def main():
     while True:
         stroki = []
         if mode == 'auto':
-            event, values = window.Read(timeout=1500 )  # period 1,5 sec
+            event, values = window.Read(timeout=1000 )  # period 1 sec
         else:
-            event, values = window.Read(timeout=15000)  # period 15 sec)
+            event, values = window.Read(timeout=55000)  # period 55 sec)
         #print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
@@ -431,19 +550,30 @@ def main():
         if event == 'auto'      : mode = 'auto'
         if event == 'manual'    : mode = 'manual'
         if event == 'About...'  :
-            window.FindElement('txt_bal').Update('{: ^12}'.format(str(cntr.term.account.acc_profit)), text_color='green')
             window.FindElement('txt_data').Update(disabled= True)
+        if event == 'Convert'   :
+            rq =  convert(cntr)
+
+
         if event == '__TIMEOUT__'   :
-            stroki.append('--1--')
-            stroki.append('--2--')
-            stroki.append('--3--')
-            stroki.append('--4--')
-            stroki.append('--5--')
+            rq = read_parse_data(cntr)
+            if rq[0] != 0:
+                stroki.append(rq[1])
+            else:
+                # update PROFIT in txt_bal
+                profit = cntr.term.account.acc_profit
+                if profit < 0:
+                    window.FindElement('txt_bal').Update('{: ^12}'.format(str(profit)), text_color='red')
+                else:
+                    window.FindElement('txt_bal').Update('{: ^12}'.format(str(profit)), text_color='green')
+                # update text in txt_data
+                stroki.append(cntr.term.account.acc_date)
+                stroki.append('write new string hist_TODAY ')
 
         window.FindElement('txt_data').Update('\n'.join(stroki))
         txt_frmt = "%Y.%m.%d  %H:%M:%S"
         stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
-        stts += 'mode = ' + str(mode)
+        stts += 'event = ' + event
         window.FindElement('txt_status').Update(stts)
 
     return
