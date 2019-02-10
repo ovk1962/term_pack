@@ -438,15 +438,8 @@ def convert_sql_txt(cntr, arr):
                 buf_index = item[0]
                 buf_date_time = item[1].split('|')[0].split(' ')[1]
 
-                #if len(hist_out_archiv) == 0:
-                    #hist_out_archiv.append(item)
-                    #buf_60_sec = item[0]
-                #else:
-                    #if (item[0] - buf_60_sec) > 59:
-                        #hist_out_archiv.append(item)
-                        #buf_60_sec = item[0]
-                min_1_hist = item[1].split('|')[0]
-                dtt = datetime.strptime(str(min_1_hist), "%d.%m.%Y %H:%M:%S")
+                frm = '%d.%m.%Y %H:%M:%S'
+                dtt = datetime.strptime(str(item[1].split('|')[0]), frm)
                 if len(hist_out_archiv) == 0:
                     hist_out_archiv.append(item)
                     buf_60_sec = dtt.minute
@@ -581,7 +574,7 @@ def main():
                 stroki.append('write new string hist_TODAY ')
 
         window.FindElement('txt_data').Update('\n'.join(stroki))
-        txt_frmt = "%Y.%m.%d  %H:%M:%S"
+        txt_frmt = '%Y.%m.%d  %H:%M:%S'
         stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
         stts += 'event = ' + event
         window.FindElement('txt_status').Update(stts)
