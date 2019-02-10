@@ -363,8 +363,7 @@ def main():
                 ['Exit', 'Exit']
                 ]
     tab_BALANCE =  [
-                    [sg.T('-9999.99', text_color='red',  font='Helvetica 48',
-                        justification='right', text_color=None, key='txt_bal')],
+                    [sg.T('  -9999.99', text_color='red', font='Helvetica 48', key='txt_bal')],
                    ]
 
     def_txt, frm = [], '{: <15}  => {: ^15}\n'
@@ -388,6 +387,9 @@ def main():
 
     window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
 
+    # init CONTR
+    cntr = Class_CONTR(file_path_DATA, db_path_FUT)
+
     mode = 'auto'
     stroki = ['','','','','']
     # main cycle   -----------------------------------------------------
@@ -403,7 +405,8 @@ def main():
         if event == 'auto'          : mode = 'auto'
         if event == 'manual'        : mode = 'manual'
         if event == 'About...'      :
-            window.FindElement('txt_bal').Update('00000.00')
+            #window.FindElement('txt_bal').Update('  00000.00', text_color='green')
+            window.FindElement('txt_bal').Update('{: ^12}'.format('00000.00'), text_color='green')
         if event == '__TIMEOUT__'   :
             pass
 
