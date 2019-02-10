@@ -415,7 +415,8 @@ def convert_sql_txt(cntr, arr):
         hist_out = []
         hist_out_report = []
         hist_out_archiv = []
-        buf_index  = buf_60_sec = 0
+        buf_index  = 0
+        buf_60_sec = 0
         buf_date_time = ''
         #
         last_day = arr_hist[-1][1].split(' ')[0]
@@ -437,13 +438,22 @@ def convert_sql_txt(cntr, arr):
                 buf_index = item[0]
                 buf_date_time = item[1].split('|')[0].split(' ')[1]
 
+                #if len(hist_out_archiv) == 0:
+                    #hist_out_archiv.append(item)
+                    #buf_60_sec = item[0]
+                #else:
+                    #if (item[0] - buf_60_sec) > 59:
+                        #hist_out_archiv.append(item)
+                        #buf_60_sec = item[0]
+                min_1_hist = item[1].split('|')[0]
+                dtt = datetime.strptime(str(min_1_hist), "%d.%m.%Y %H:%M:%S")
                 if len(hist_out_archiv) == 0:
                     hist_out_archiv.append(item)
-                    buf_60_sec = item[0]
+                    buf_60_sec = dtt.minute
                 else:
-                    if (item[0] - buf_60_sec) > 59:
+                    if dtt.minute != buf_60_sec:
                         hist_out_archiv.append(item)
-                        buf_60_sec = item[0]
+                        buf_60_sec = dtt.minute
         #
         str_month = str(dtt.month)
         if dtt.month < 10:       str_month = '0' + str(dtt.month)
