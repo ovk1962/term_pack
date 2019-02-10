@@ -345,7 +345,7 @@ def init_cntr(cntr):
         sg.PopupError('Error !', err_msg)
         return [1, err_msg]
 
-    print('\ninit_cntr - OK')
+    print('init_cntr - OK')
     return [0, 'OK']
 #=======================================================================
 def get_table_data(cntr):
@@ -400,7 +400,7 @@ def main():
 
     tab_DATA    =  [
                     [sg.Multiline( default_text=''.join(def_txt),
-                        size=(50, 5), key='txt_data')],
+                        size=(50, 5), key='txt_data', autoscroll=False, focus=False),],
                    ]
 
     # Display data
@@ -409,32 +409,42 @@ def main():
     layout = [
                 [sg.Menu(menu_def, tearoff=False, key='menu_def')],
                 [sg.TabGroup([[sg.Tab('DATA', tab_DATA), sg.Tab('BALANCE', tab_BALANCE)]], key='tab_group')],
+                [sg.T('',size=(60,2), font='Helvetica 8', key='txt_status'), sg.Quit(auto_size_button=True)],
              ]
 
     window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
 
     mode = 'auto'
-    stroki = ['','','','','']
 
     # main cycle   -----------------------------------------------------
     while True:
+        stroki = []
         if mode == 'auto':
-            event, values = window.Read(timeout=3000 )  # period 3 sec
+            event, values = window.Read(timeout=1500 )  # period 1,5 sec
         else:
-            event, values = window.Read(timeout=30000)  # period 30 sec)
+            event, values = window.Read(timeout=15000)  # period 15 sec)
         #print('event = ', event, ' ..... values = ', values)
 
-        if event is None            : break
-        if event == 'Exit'          : break
-        if event == 'auto'          : mode = 'auto'
-        if event == 'manual'        : mode = 'manual'
-        if event == 'About...'      :
+        if event is None        : break
+        if event == 'Quit'      : break
+        if event == 'Exit'      : break
+        if event == 'auto'      : mode = 'auto'
+        if event == 'manual'    : mode = 'manual'
+        if event == 'About...'  :
             window.FindElement('txt_bal').Update('{: ^12}'.format(str(cntr.term.account.acc_profit)), text_color='green')
+            window.FindElement('txt_data').Update(disabled= True)
         if event == '__TIMEOUT__'   :
-            txt_frmt = "%H:%M:%S   %d.%m.%Y"
-            stroki[0] = time.strftime(txt_frmt, time.localtime())
+            stroki.append('--1--')
+            stroki.append('--2--')
+            stroki.append('--3--')
+            stroki.append('--4--')
+            stroki.append('--5--')
 
-        window.FindElement('txt_data').Update(''.join(stroki))
+        window.FindElement('txt_data').Update('\n'.join(stroki))
+        txt_frmt = "%Y.%m.%d  %H:%M:%S"
+        stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
+        stts += 'mode = ' + str(mode)
+        window.FindElement('txt_status').Update(stts)
 
     return
 #=======================================================================
