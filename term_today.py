@@ -40,20 +40,320 @@ class Class_LOGGER():
     def wr_log_error(self, msg):
         self.logger.error(msg)
 #=======================================================================
+class Class_ACCOUNT():
+    def __init__(self):
+        self.acc_date = ''
+        self.acc_balance = 0.0
+        self.acc_profit  = 0.0
+        self.acc_go      = 0.0
+        self.acc_depo    = 0.0
+#=======================================================================
+class Class_FUT():
+    def __init__(self):
+        self.sP_code = "-"
+        self.sRest = 0
+        self.sVar_margin = 0.0
+        self.sOpen_price = 0.0
+        self.sLast_price = 0.0
+        self.sAsk =  0.0
+        self.sBuy_qty = 0
+        self.sBid =  0.0
+        self.sSell_qty = 0
+        self.sFut_go = 0.0
+#=======================================================================
+class Class_TERM():
+    def __init__(self, path_trm):
+        self.nm = ''
+        self.path_trm = path_trm
+        #self.dt_file_size = 0
+        self.dt_file = 0        # curv stamptime data file from TERM
+        self.dt_data = 0        # curv stamptime DATA/TIME from TERM
+        self.str_in_file = []   # list of strings from trm
+        self.data_fut = []      # list of Class_FUT() from trm
+        self.account  = ''      # obj Class_ACCOUNT() from trm
+        self.str_for_hist = ''  # str for hist table
+        self.delay_tm = 10      # min period to get data for DB (10 sec)
+        #
+        self.sec_10_00 = 36000      # seconds from 00:00 to 10:00
+        self.sec_14_00 = 50400      # seconds from 00:00 to 14:00
+        self.sec_14_05 = 50700      # seconds from 00:00 to 14:05
+        self.sec_18_45 = 67500      # seconds from 00:00 to 18:45
+        self.sec_19_05 = 68700      # seconds from 00:00 to 19:05
+        self.sec_23_45 = 85500      # seconds from 00:00 to 23:45
+    #-------------------------------------------------------------------
+    def rd_term(self):
+        #--- check file cntr.file_path_DATA ----------------------------
+        if not os.path.isfile(self.path_trm):
+            err_msg = 'can not find file'
+            #cntr.log.wr_log_error(err_msg)
+            return [1, err_msg]
+        buf_stat = os.stat(self.path_trm)
+        #
+        #--- check size of file ----------------------------------------
+        if buf_stat.st_size == 0:
+            err_msg = 'size DATA file is NULL'
+            #cntr.log.wr_log_error(err_msg)
+            return [2, err_msg]
+        #
+        #--- check time modificated of file ----------------------------
+        if int(buf_stat.st_mtime) == self.dt_file:
+            str_dt_file = datetime.fromtimestamp(self.dt_file).strftime('%H:%M:%S')
+            return [3, 'FILE is not modificated']
+        else:
+            #self.dt_file_prev = self.dt_file
+            self.dt_file = int(buf_stat.st_mtime)
+            #print(self.dt_file)
+        #
+        #--- read TERM file --------------------------------------------
+        buf_str = []
+        with open(self.path_trm,"r") as fh:
+            buf_str = fh.read().splitlines()
+        #
+        #--- check size of list/file -----------------------------------
+        if len(buf_str) == 0:
+            err_msg = ' the size buf_str is NULL'
+            #cntr.log.wr_log_error(err_msg)
+            return [4, err_msg]
+        #
+        #--- check modificated DATE/TIME of term ! ---------------------
+        #--- It's should be more then 10 sec ---------------------------
+        try:
+            dt_str = buf_str[0].split('|')[0]
+            dt_datetime = datetime.strptime(dt_str, '%d.%m.%Y %H:%M:%S')
+            dt_sec = dt_datetime.replace(tzinfo=timezone.utc).timestamp()      # real UTC
+            if (dt_sec - self.dt_data) > self.delay_tm:
+                self.dt_data = dt_sec
+            else:
+                str_dt_data = datetime.fromtimestamp(self.dt_data).strftime('%H:%M:%S')
+                err_msg = 'DATA is not updated ' + dt_str
+                #cntr.log.wr_log_error(err_msg)
+                return [5, err_msg]
+        except Exception as ex:
+            err_msg = dt_str + ' => ' + str(ex)
+            #cntr.log.wr_log_error(err_msg)
+            return [6, err_msg]
+        #
+        #--- check MARKET time from 10:00 to 23:45 ---------------------
+        #term_dt = cntr.term.str_in_file[0].split('|')[0]
+        term_dt = buf_str[0].split('|')[0]
+        dtt = datetime.strptime(str(term_dt), "%d.%m.%Y %H:%M:%S")
+        cur_time = dtt.second + 60 * dtt.minute + 60 * 60 * dtt.hour
+        if not (
+            (cur_time > self.sec_10_00  and # from 10:00 to 14:00
+            cur_time < self.sec_14_00) or
+            (cur_time > self.sec_14_05  and # from 14:05 to 18:45
+            cur_time < self.sec_18_45) or
+            (cur_time > self.sec_19_05  and # from 19:05 to 23:45
+            cur_time < self.sec_23_45)):
+                err_msg = 'it is not MARKET time now'
+                #cntr.log.wr_log_error(err_msg)
+                return [7, err_msg]
+        #
+        #--- compare new DATA with old ---------------------------------
+        new_data = buf_str[2:]
+        old_data = self.str_in_file[2:]
+        buf_len = len(list(set(new_data) - set(old_data)))
+        if  buf_len == 0:
+            err_msg = 'ASK/BID did not change'
+            #cntr.log.wr_log_error(err_msg)
+            return [8, err_msg]
+        #---  you will do more checks in the future!!!  ----------------
+        #--- check ASK != 0  -------------------------------------------
+        #--- check BID != 0  -------------------------------------------
+        #--- check ASK < BID -------------------------------------------
+        #
+        self.str_in_file = []
+        self.str_in_file = buf_str[:]
+        #
+        return [0, 'OK']
+    #-------------------------------------------------------------------
+    def parse_str_in_file(self):
+        try:
+            self.data_fut = []
+            self.account  = Class_ACCOUNT()
+            # format of list data_fut:
+            #   0   => string of DATA / account.acc_date
+            #   1   => [account.acc_balance/acc_profit/acc_go/acc_depo]
+            #   2 ... 22  => Class_FUT()
+            #print(self.str_in_file)
 
+            for i, item in enumerate(list(self.str_in_file)):
+                list_item = ''.join(item).replace(',','.').split('|')
+                if   i == 0:
+                    self.account.acc_date  = list_item[0]
+                    self.data_fut.append(self.account.acc_date)
+                elif i == 1:
+                    self.account.acc_balance = float(list_item[0])
+                    self.account.acc_profit  = float(list_item[1])
+                    self.account.acc_go      = float(list_item[2])
+                    self.account.acc_depo    = float(list_item[3])
+                    self.data_fut.append([self.account.acc_balance,
+                                            self.account.acc_profit,
+                                            self.account.acc_go,
+                                            self.account.acc_depo ])
+                else:
+                    b_fut = Class_FUT()
+                    b_fut.sP_code      = list_item[0]
+                    b_fut.sRest        = int  (list_item[1])
+                    b_fut.sVar_margin  = float(list_item[2])
+                    b_fut.sOpen_price  = float(list_item[3])
+                    b_fut.sLast_price  = float(list_item[4])
+                    b_fut.sAsk         = float(list_item[5])
+                    b_fut.sBuy_qty     = int  (list_item[6])
+                    b_fut.sBid         = float(list_item[7])
+                    b_fut.sSell_qty    = int  (list_item[8])
+                    b_fut.sFut_go      = float(list_item[9])
+                    self.data_fut.append(b_fut)
+            #print('cntr.data_fut => \n', cntr.data_fut)
+        except Exception as ex:
+            err_msg = 'parse_str_in_file / ' + str(ex)
+            print(err_msg)
+            #cntr.log.wr_log_error(err_msg)
+            return [1, err_msg]
+        return [0, 'ok']
+    #-------------------------------------------------------------------
+    def prpr_str_hist(self):
+        try:
+            if self.str_in_file != '':
+                for i, item in enumerate(self.str_in_file):
+                    list_item = ''.join(item).replace(',','.').split('|')
+                    if   i == 0:
+                        str_hist = item.split('|')[0] + '|'
+                    elif i == 1:
+                        pass
+                    else:
+                        b_str = item.split('|')
+                        str_hist += b_str[5] + '|' + b_str[7] + '|'
+                self.str_for_hist = str_hist
+            else:
+                return [0, 'str_in_file is empty!']
+        except Exception as ex:
+            err_msg = 'prepare_str_hist => ' + str(ex)
+            #cntr.log.wr_log_error(err_msg)
+            return [1, err_msg]
+        return [0, 'OK']
+#=======================================================================
+class Class_SQLite():
+    def __init__(self, path_db):
+        self.path_db = path_db
+        self.table_db = []
+        self.conn = ''
+        self.cur = ''
+    #-------------------------------------------------------------------
+    def check_db(self):
+        '''  check FILE of DB SQLite    -----------------------------'''
+        #    return os.stat: if FILE is and size != 0
+        r_check_db = [0, '']
+        name_path_db = self.path_db
+        if not os.path.isfile(name_path_db):
+            r_check_db = [1, 'can not find file']
+        else:
+            buf_st = os.stat(name_path_db)
+            if buf_st.st_size == 0:
+                r_check_db = [1, buf_st]
+            else:
+                r_check_db = [0, buf_st]
+        return r_check_db
+    #-------------------------------------------------------------------
+    def reset_table_db(self, name_tbl):
+        ''' reset data in table DB  ---------------------------------'''
+        r_reset_tbl = [0, '']
+        try:
+            self.conn = sqlite3.connect(self.path_db)
+            self.cur = self.conn.cursor()
+            self.cur.execute("DELETE FROM " + name_tbl)
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            r_reset_tbl = [0, 'OK']
+        except Exception as ex:
+            r_reset_tbl = [1, str(ex)]
+        return r_reset_tbl
+    #-------------------------------------------------------------------
+    def rewrite_table(self, name_tbl, name_list, val = '(?, ?)'):
+        ''' rewrite data from table ARCHIV_PACK & PACK_TODAY & DATA ----'''
+        r_rewrt_tbl = [0, '']
+        try:
+            self.conn = sqlite3.connect(self.path_db)
+            self.cur = self.conn.cursor()
+            self.cur.execute("DELETE FROM " + name_tbl)
+            self.cur.executemany("INSERT INTO " + name_tbl + " VALUES" + val, name_list)
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            r_rewrt_tbl = [0, 'OK']
+        except Exception as ex:
+            r_rewrt_tbl = [1, str(ex)]
+        return r_rewrt_tbl
+    #-------------------------------------------------------------------
+    def write_table_db(self, name_tbl, name_list):
+        ''' write data string into table DB  ------------------------'''
+        r_write_tbl = [0, '']
+        try:
+            self.conn = sqlite3.connect(self.path_db)
+            self.cur = self.conn.cursor()
+            self.cur.executemany("INSERT INTO " + name_tbl + " VALUES(?, ?)", name_list)
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            r_write_tbl = [0, 'OK']
+        except Exception as ex:
+            r_write_tbl = [1, str(ex)]
+        return r_write_tbl
+    #-------------------------------------------------------------------
+    def get_table_db_with(self, name_tbl):
+        ''' read one table DB  --------------------------------------'''
+        r_get_table_db = []
+        self.conn = sqlite3.connect(self.path_db)
+        try:
+            with self.conn:
+                self.cur = self.conn.cursor()
+                #self.cur.execute("PRAGMA busy_timeout = 3000")   # 3 s
+                self.cur.execute("SELECT * from " + name_tbl)
+                self.table_db = self.cur.fetchall()    # read table name_tbl
+                r_get_table_db = [0, self.table_db]
+        except Exception as ex:
+            r_get_table_db = [1, name_tbl + str(ex)]
+
+        return r_get_table_db
+#=======================================================================
+class Class_CONTR():
+    ''' There are 2 history tables of FUT -
+    file_path_DATA  - file data from terminal QUIK
+    db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
+    db_path_FUT_arc - TABLE archiv,   ask/bid for period  (TF = 60 sec)
+    TABLE total_pack_archiv should update one time per DAY
+    TABLE total_pack_today  should update one time per MINUTE
+    '''
+    def __init__(self, file_path_DATA, db_path_FUT):
+        #
+        self.file_path_DATA  = file_path_DATA    # path file DATA
+        self.term            = Class_TERM(self.file_path_DATA)
+        #
+        self.db_path_FUT  = db_path_FUT       # path DB data & hist
+        self.db_FUT_data  = Class_SQLite(self.db_path_FUT)
+        #
+        self.hist_fut = []   # массив котировок фьючей hist 60 s  (today)
+        #
+        self.log  = Class_LOGGER()
+        self.log.wr_log_info('*** START ***')
 #=======================================================================
 def main():
     name_trm = 'TRM_TODAY_1.00'
     menu_def = [
+                ['Mode', ['auto', 'manual', ],],
                 ['Test', ['Test SQL',  ['SQL tbl DATA', 'SQL tbl TODAY', ],],],
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
     tab_BALANCE =  [
-                    [sg.T('This is inside tab_BALANCE', key='BALANCE')],
+                    [sg.T('-9999.99',  font='Helvetica 48',
+                        justification='right', text_color=None, key='txt_bal')],
                    ]
     tab_DATA    =  [
-                    [sg.T('This is inside tab_DATA', key='DATA')],
+                    [sg.Multiline(
+                        default_text='String 01\nString 02\nString 03\nString 04\nString 05',
+                        size=(50, 5), key='txt_data', autoscroll=True)],
                    ]
     #-------------------------------------------------------------------
     # Display data in a table format
@@ -62,26 +362,28 @@ def main():
 
     layout = [
                 [sg.Menu(menu_def, tearoff=False, key='menu_def')],
-                [sg.TabGroup([[sg.Tab('BALANCE', tab_BALANCE), sg.Tab('DATA', tab_DATA)]], key='tab_group')],
+                [sg.TabGroup([[sg.Tab('DATA', tab_DATA), sg.Tab('BALANCE', tab_BALANCE)]], key='tab_group')],
              ]
-
-    #form = sg.FlexForm(name_trm, return_keyboard_events=True, grab_anywhere=False, use_default_focus=False)
-    #form.Layout(layout)
 
     window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
 
     mode = 'auto'
-    tm_out = 3000
+    stroki = ['','','','','']
     # main cycle   -----------------------------------------------------
     while True:
         if mode == 'auto':
-            event, values = window.Read(timeout=tm_out)  # period 52 sec
+            event, values = window.Read(timeout=3000)  # period 3 sec
         else:
-            event, values = window.Read()  # period 3 sec
+            event, values = window.Read(timeout=30000)  # period 30 sec)
         print('event = ', event, ' ..... values = ', values)
 
         if event is None            : break
         if event == 'Exit'          : break
+        if event == 'auto'          : mode = 'auto'
+        if event == 'manual'        : mode = 'manual'
+        if event == 'About...'      :
+            window.FindElement('txt_bal').Update('00000.00')
+
 
 #=======================================================================
 if __name__ == '__main__':
