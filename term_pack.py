@@ -160,7 +160,11 @@ class Class_CONTR():
     file_path_DATA  - file data from terminal QUIK
     db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
     '''
-    def __init__(self, db_path_FUT, db_path_PACK, log_path):
+    def __init__(self, db_path_FUT, db_path_PACK, log_path, dt_start_date):
+        #
+        frm = '%Y-%m-%d %H:%M:%S'
+        self.dt_start = datetime.strptime(dt_start_date, frm).replace(tzinfo=timezone.utc).timestamp()
+        print(dt_start_date, self.dt_start)
         #
         self.db_path_FUT  = db_path_FUT       # path DB data & hist
         self.db_FUT_data  = Class_SQLite(self.db_path_FUT)
@@ -180,6 +184,7 @@ class Class_CONTR():
         # init LOGger
         self.log  = Class_LOGGER(log_path)
         self.log.wr_log_info('*** START ***')
+
 #=======================================================================
 def init_cntr(cntr):
     #--- init FUT cntr.data_fut & cntr.account -------------
@@ -196,6 +201,40 @@ def init_cntr(cntr):
         cntr.log.wr_log_error(err_msg)
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
+
+    rq  = copy_hist_FUT_today(cntr)
+    if rq[0] != 0:
+        err_msg = 'copy_hist_FUT_today => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+
+    rq  = get_hist_FUT(cntr)
+    if rq[0] != 0:
+        err_msg = 'get_hist_FUT => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+
+    for i_pack, item in enumerate(cntr.koef_pack):
+        calc_hist_PACK(cntr, i_pack)
+        sg.OneLineProgressMeter('calc_hist_PACK', i_pack+1, len(cntr.koef_pack), 'key', orientation='h')
+
+    rq  = wr_hist_PACK(cntr)
+    if rq[0] != 0:
+        err_msg = 'wr_hist_PACK => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+
+    if len(cntr.hist_fut_today) != 0:
+        for i_pack, item in enumerate(cntr.koef_pack):
+            calc_hist_PACK_today(cntr, i_pack)
+        if wr_hist_PACK_today(cntr)[0] != 0:
+            err_msg = 'wr_hist_PACK_today => ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            sg.Popup('Error !', err_msg)
+            return [1, err_msg]
 
     print('init_cntr - OK')
     return [0, 'OK']
@@ -237,9 +276,253 @@ def copy_data_FUT(cntr):
 
     cntr.data_fut = rq[1][:]
     parse_data_FUT(cntr)
-    print('data_fut = ', cntr.data_fut)
+    #print('data_fut = ', cntr.data_fut)
     return [0, 'ok']
 #=======================================================================
+def copy_hist_FUT_today(cntr):
+    # copy hist_today from TERM to table hist_FUT from DB cntr.db_PACK_arc
+    rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
+    if rq[0] == 0:
+        #hist_TODAY = []
+        cntr.hist_fut_today = []
+        buf_60_sec = 0
+        if len(rq[1]) != 0:
+
+            for item in rq[1]:
+                frm = '%d.%m.%Y %H:%M:%S'
+                dtt = datetime.strptime(str(item[1].split('|')[0]), frm)
+                if len(cntr.hist_fut_today) == 0:
+                    cntr.hist_fut_today.append(item)
+                    buf_60_sec = dtt.minute
+                else:
+                    if dtt.minute != buf_60_sec:
+                        cntr.hist_fut_today.append(item)
+                        buf_60_sec = dtt.minute
+
+                #if len(cntr.hist_fut_today) == 0:
+                    #cntr.hist_fut_today.append(item)
+                    #buf_60_sec = item[0]
+                #else:
+                    #if (item[0] - buf_60_sec) > 50:
+                        #cntr.hist_fut_today.append(item)
+                        #buf_60_sec = item[0]
+
+        req = cntr.db_PACK.rewrite_table('hist_FUT_today', cntr.hist_fut_today, val = '(?,?)')
+        if req[0] != 0:
+            err_msg = 'cntr.db_PACK.rewrite_table(hist_FUT_today) ' + req[1]
+            return [1, err_msg]
+    else:
+        err_msg = 'cntr.db_FUT_data.get_table_db_with(hist_today) ' + rq[1]
+        return [1, err_msg]
+    return [0, 'ok']
+#=======================================================================
+def get_hist_FUT(cntr):
+    # read table hist_FUT from DB cntr.db_PACK_arc
+    rq  = cntr.db_PACK.get_table_db_with('hist_FUT')
+    if rq[0] != 0:
+        sg.Popup('Error hist_FUT!',  rq[1])
+        return [1, rq[1]]
+    #print(len(rq[1]), rq[1][0], rq[1][-1])
+    # filtr cntr.start_sec
+    cntr.hist_fut  = []
+    for item in rq[1]:
+        if item[0] > cntr.dt_start:  #cntr.start_sec:
+            cntr.hist_fut.append([item[0], item[1]])
+    #print(len(cntr.hist_fut), cntr.hist_fut[0], cntr.hist_fut[-1])
+    return [0, 'OK']
+#=======================================================================
+def calc_hist_PACK(cntr, i_pack):
+    cntr.hist_pack[i_pack] = []
+    arr_HIST = cntr.hist_fut    # archiv of FUT 60 sec
+    const_UP, const_DW = +50, -50
+    k_EMA     = int(cntr.koef_pack[i_pack][2].split(':')[0])
+    k_EMA_rnd = int(cntr.koef_pack[i_pack][2].split(':')[1])
+    koef_EMA = round(2/(1+k_EMA),5)
+    ind = []
+    kf  = []
+    for elem in cntr.koef_pack[i_pack][1]:
+        ind.append(int(elem.split(':')[0]))
+        kf.append(int(elem.split(':')[1]))
+    koef_AMA = cntr.koef_pack[i_pack][3]
+    fSC       = float(koef_AMA.split(':')[0])
+    sSC       = float(koef_AMA.split(':')[1])
+    nn        = int(koef_AMA.split(':')[2])
+    k_ama_rnd = int(koef_AMA.split(':')[3])
+
+    for idx, item_HIST in enumerate(arr_HIST):
+        ask_p, bid_p = 0, 0
+        buf_c_pack = Class_PACK()
+        buf_c_pack.ind = item_HIST[0]
+        item = (item_HIST[1].replace(',', '.')).split('|')
+        #print(item)
+        buf_c_pack.dt, buf_c_pack.tm  = item[0].split(' ')
+        for jdx, jtem in enumerate(kf):
+            ask_j = float(item[1 + 2*ind[jdx]])
+            bid_j = float(item[1 + 2*ind[jdx] + 1])
+            if jtem > 0 :
+                ask_p = ask_p + jtem * ask_j
+                bid_p = bid_p + jtem * bid_j
+            if jtem < 0 :
+                ask_p = ask_p + jtem * bid_j
+                bid_p = bid_p + jtem * ask_j
+
+        ask_bid_AVR = 0
+        if idx == 0:
+            null_prc = int((ask_p + bid_p)/2)
+            cntr.koef_pack[i_pack][-1] = null_prc
+            buf_c_pack.pAsk, buf_c_pack.pBid = 0, 0
+            buf_c_pack.EMAf, buf_c_pack.EMAf_rnd = 0, 0
+            buf_c_pack.AMA, buf_c_pack.AMA_rnd = 0, 0
+            buf_c_pack.cnt_EMAf_rnd = 0
+            buf_c_pack.cnt_AMA_rnd = 0
+
+        else:
+            ask_p = int(ask_p - null_prc)
+            bid_p = int(bid_p - null_prc)
+            buf_c_pack.pAsk = ask_p
+            buf_c_pack.pBid = bid_p
+            ask_bid_AVR = int((ask_p + bid_p)/2)
+
+            prev_EMAf = cntr.hist_pack[i_pack][idx-1].EMAf
+            buf_c_pack.EMAf = round(prev_EMAf + (ask_bid_AVR - prev_EMAf) * koef_EMA, 1)
+            buf_c_pack.EMAf_rnd = k_EMA_rnd * math.ceil(buf_c_pack.EMAf / k_EMA_rnd )
+
+            prev_EMAf_rnd = cntr.hist_pack[i_pack][idx-1].EMAf_rnd
+            i_cnt = cntr.hist_pack[i_pack][idx-1].cnt_EMAf_rnd
+            if prev_EMAf_rnd > buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt > 0 else i_cnt-1
+            elif prev_EMAf_rnd < buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt < 0 else i_cnt+1
+            else:
+                buf_c_pack.cnt_EMAf_rnd = i_cnt
+
+        cntr.hist_pack[i_pack].append(buf_c_pack)
+#=======================================================================
+def calc_hist_PACK_today(cntr, i_pack):
+    cntr.hist_pack_today[i_pack] = []
+    arr_HIST = cntr.hist_fut_today    # archiv of FUT 60 sec
+    const_UP, const_DW = +50, -50
+    k_EMA     = int(cntr.koef_pack[i_pack][2].split(':')[0])
+    k_EMA_rnd = int(cntr.koef_pack[i_pack][2].split(':')[1])
+    koef_EMA = round(2/(1+k_EMA),5)
+    ind = []
+    kf  = []
+    for elem in cntr.koef_pack[i_pack][1]:
+        ind.append(int(elem.split(':')[0]))
+        kf.append(int(elem.split(':')[1]))
+    koef_AMA = cntr.koef_pack[i_pack][3]
+    fSC       = float(koef_AMA.split(':')[0])
+    sSC       = float(koef_AMA.split(':')[1])
+    nn        = int(koef_AMA.split(':')[2])
+    k_ama_rnd = int(koef_AMA.split(':')[3])
+
+    for idx, item_HIST in enumerate(arr_HIST):
+        ask_p, bid_p = 0, 0
+        buf_c_pack = Class_PACK()
+        buf_c_pack.ind = item_HIST[0]
+        item = (item_HIST[1].replace(',', '.')).split('|')
+        #print(item)
+        buf_c_pack.dt, buf_c_pack.tm  = item[0].split(' ')
+        for jdx, jtem in enumerate(kf):
+            ask_j = float(item[1 + 2*ind[jdx]])
+            bid_j = float(item[1 + 2*ind[jdx] + 1])
+            if jtem > 0 :
+                ask_p = ask_p + jtem * ask_j
+                bid_p = bid_p + jtem * bid_j
+            if jtem < 0 :
+                ask_p = ask_p + jtem * bid_j
+                bid_p = bid_p + jtem * ask_j
+
+        ask_bid_AVR = 0
+        if idx == 0:
+            null_prc = cntr.koef_pack[i_pack][-1]
+            ask_p = int(ask_p - null_prc)
+            bid_p = int(bid_p - null_prc)
+            buf_c_pack.pAsk = ask_p
+            buf_c_pack.pBid = bid_p
+            ask_bid_AVR = int((ask_p + bid_p)/2)
+
+            prev_EMAf = cntr.hist_pack[i_pack][idx-1].EMAf
+            buf_c_pack.EMAf = round(prev_EMAf + (ask_bid_AVR - prev_EMAf) * koef_EMA, 1)
+            buf_c_pack.EMAf_rnd = k_EMA_rnd * math.ceil(buf_c_pack.EMAf / k_EMA_rnd )
+
+            prev_EMAf_rnd = cntr.hist_pack[i_pack][idx-1].EMAf_rnd
+            i_cnt = cntr.hist_pack[i_pack][idx-1].cnt_EMAf_rnd
+            if prev_EMAf_rnd > buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt > 0 else i_cnt-1
+            elif prev_EMAf_rnd < buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt < 0 else i_cnt+1
+            else:
+                buf_c_pack.cnt_EMAf_rnd = i_cnt
+        else:
+            ask_p = int(ask_p - null_prc)
+            bid_p = int(bid_p - null_prc)
+            buf_c_pack.pAsk = ask_p
+            buf_c_pack.pBid = bid_p
+            ask_bid_AVR = int((ask_p + bid_p)/2)
+
+            prev_EMAf = cntr.hist_pack_today[i_pack][idx-1].EMAf
+            buf_c_pack.EMAf = round(prev_EMAf + (ask_bid_AVR - prev_EMAf) * koef_EMA, 1)
+            buf_c_pack.EMAf_rnd = k_EMA_rnd * math.ceil(buf_c_pack.EMAf / k_EMA_rnd )
+
+            prev_EMAf_rnd = cntr.hist_pack_today[i_pack][idx-1].EMAf_rnd
+            i_cnt = cntr.hist_pack_today[i_pack][idx-1].cnt_EMAf_rnd
+            if prev_EMAf_rnd > buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt > 0 else i_cnt-1
+            elif prev_EMAf_rnd < buf_c_pack.EMAf_rnd:
+                buf_c_pack.cnt_EMAf_rnd = 0 if i_cnt < 0 else i_cnt+1
+            else:
+                buf_c_pack.cnt_EMAf_rnd = i_cnt
+
+
+        cntr.hist_pack_today[i_pack].append(buf_c_pack)
+#=======================================================================
+def prepair_hist_PACK(cntr, b_today = False):
+    name_list =[]
+    if b_today :
+        arr_hist_pack = cntr.hist_pack_today
+    else:
+        arr_hist_pack = cntr.hist_pack
+    for i_hist, item_hist in enumerate(arr_hist_pack[0]):
+        buf_dt = item_hist.dt + ' ' + item_hist.tm + ' '
+        buf_s = ''
+        for i_mdl, item_mdl in enumerate(arr_hist_pack):
+            buf = arr_hist_pack[i_mdl][i_hist]
+            buf_s += str(buf.pAsk) + ' ' + str(buf.pBid)     + ' '
+            buf_s += str(buf.EMAf) + ' ' + str(buf.EMAf_rnd) + ' ' + str(buf.cnt_EMAf_rnd) + ' '
+            buf_s += str(buf.AMA)  + ' ' + str(buf.AMA_rnd)  + ' ' + str(buf.cnt_AMA_rnd) + '|'
+        name_list.append((item_hist.ind, buf_dt + buf_s.replace('.', ',')))
+    return name_list
+#=======================================================================
+def wr_hist_PACK(cntr):
+    name_list = []
+    name_list = prepair_hist_PACK(cntr)
+    rq = cntr.db_PACK.rewrite_table('hist_PACK', name_list, val = '(?,?)')
+    if rq[0] != 0:
+        err_msg = 'rewrite_table hist_PACK ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+    else:
+        cntr.log.wr_log_info('rewrite_table hist_PACK  - OK')
+        #sg.Popup('OK !', 'ok rewrite_table hist_PACK  ' + str(len(name_list)))
+        return [0, 'OK']
+#=======================================================================
+def wr_hist_PACK_today(cntr):
+    name_list = []
+    name_list = prepair_hist_PACK(cntr, b_today = True)
+    rq = cntr.db_PACK.rewrite_table('hist_PACK_today', name_list, val = '(?,?)')
+    if rq[0] != 0:
+        err_msg = 'rewrite_table hist_PACK_today ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+    else:
+        cntr.log.wr_log_info('rewrite_table hist_PACK_today  - OK')
+        #sg.Popup('OK !', 'ok rewrite_table hist_PACK_today  ' + str(len(name_list)))
+        return [0, 'OK']
+#=======================================================================
+
 def parse_data_FUT(cntr):
     try:
         cntr.account  = Class_ACCOUNT()
@@ -273,8 +556,8 @@ def parse_data_FUT(cntr):
                 b_fut.sFut_go      = float(list_item[9])
                 data_fut.append(b_fut)
         cntr.data_fut = data_fut[:]
-        print('account = ', cntr.account.acc_date)
-        print('cntr.data_fut => \n', cntr.data_fut[0].sP_code)
+        #print('account = ', cntr.account.acc_date)
+        #print('cntr.data_fut => \n', cntr.data_fut[0].sP_code)
     except Exception as ex:
         err_msg = 'parse_str_in_file / ' + str(ex)
         print(err_msg)
@@ -320,7 +603,7 @@ def main():
     #print('{: <15}\n{: <25}\n{: <15}'.format(name_trm, log_path, dt_start_date))
 
     # init CONTR
-    cntr = Class_CONTR(db_path_FUT, db_path_PACK, log_path)
+    cntr = Class_CONTR(db_path_FUT, db_path_PACK, log_path, dt_start_date)
     init_cntr(cntr)
 
 
