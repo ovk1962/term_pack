@@ -4,15 +4,11 @@
 #  term_today.py
 #
 #=======================================================================
-import os
-import sys
-import math
-import time
+import os, sys, math, time
 import logging
 import smtplib
 import sqlite3
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 if sys.version_info[0] >= 3:
     import PySimpleGUI as sg
 else:

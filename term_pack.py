@@ -4,15 +4,11 @@
 #  term_pack.py
 #
 #=======================================================================
-import os
-import sys
-import math
-import time
+import os, sys, math, time
 import logging
 import smtplib
 import sqlite3
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 if sys.version_info[0] >= 3:
     import PySimpleGUI as sg
 else:
@@ -150,7 +146,10 @@ class Class_CONTR():
     file_path_DATA  - file data from terminal QUIK
     db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
     '''
-    def __init__(self, db_path_PACK, log_path):
+    def __init__(self, db_path_FUT, db_path_PACK, log_path):
+        #
+        self.db_path_FUT  = db_path_FUT       # path DB data & hist
+        self.db_FUT_data  = Class_SQLite(self.db_path_FUT)
         #
         self.db_path_PACK = db_path_PACK       # path DB data & hist
         self.db_PACK      = Class_SQLite(self.db_path_PACK)
@@ -164,7 +163,9 @@ class Class_CONTR():
 def main():
     # init program config
     dirr = os.path.abspath(os.curdir)
-    db_path_PACK, name_trm, log_path, dt_start_date = dirr + '\\DB\\term_pack.sqlite', '', '', ''
+    db_path_FUT  = dirr + '\\DB\\term_today.sqlite'
+    db_path_PACK = dirr + '\\DB\\term_pack.sqlite'
+    name_trm, log_path, dt_start_date =  '', '', ''
 
     path_DB  = Class_SQLite(db_path_PACK)
     rq  = path_DB.get_table_db_with('cfg_SOFT')
@@ -180,7 +181,9 @@ def main():
     #print('{: <15}\n{: <25}\n{: <15}'.format(name_trm, log_path, dt_start_date))
 
     # init CONTR
-    cntr = Class_CONTR(db_path_PACK, log_path)
+    cntr = Class_CONTR(db_path_FUT, db_path_PACK, log_path)
+    #init_cntr(cntr)
+
 
 
     return
