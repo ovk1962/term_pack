@@ -187,7 +187,7 @@ class Class_CONTR():
 
 #=======================================================================
 def init_cntr(cntr):
-    #--- init FUT cntr.data_fut & cntr.account -------------
+    # init cntr.koef_pack
     rq  = get_cfg_PACK(cntr)
     if rq[0] != 0:
         err_msg = 'get_cfg_PACK => ' + rq[1]
@@ -195,6 +195,7 @@ def init_cntr(cntr):
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
+    # init cntr.data_fut & parse FUT cntr.data_fut & cntr.account
     rq  = copy_data_FUT(cntr)
     if rq[0] != 0:
         err_msg = 'copy_data_FUT => ' + rq[1]
@@ -202,6 +203,8 @@ def init_cntr(cntr):
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
+    # copy hist_today table hist_FUT + filtr TF = 1 min +
+    # rewrite into DB cntr.db_PACK
     rq  = copy_hist_FUT_today(cntr)
     if rq[0] != 0:
         err_msg = 'copy_hist_FUT_today => ' + rq[1]
@@ -209,6 +212,7 @@ def init_cntr(cntr):
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
+    # read table hist_FUT + copy into cntr.db_PACK from cntr.start_sec
     rq  = get_hist_FUT(cntr)
     if rq[0] != 0:
         err_msg = 'get_hist_FUT => ' + rq[1]
@@ -216,10 +220,12 @@ def init_cntr(cntr):
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
+    # init + calc cntr.hist_pack for all PACKs
     for i_pack, item in enumerate(cntr.koef_pack):
         calc_hist_PACK(cntr, i_pack)
         sg.OneLineProgressMeter('calc_hist_PACK', i_pack+1, len(cntr.koef_pack), 'key', orientation='h')
 
+    # rewrite table hist_PACK
     rq  = wr_hist_PACK(cntr)
     if rq[0] != 0:
         err_msg = 'wr_hist_PACK => ' + rq[1]
@@ -227,9 +233,12 @@ def init_cntr(cntr):
         sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
+    # init + calc cntr.hist_pack_today for all PACKs
     if len(cntr.hist_fut_today) != 0:
         for i_pack, item in enumerate(cntr.koef_pack):
             calc_hist_PACK_today(cntr, i_pack)
+
+        # rewrite table hist_pack_today
         if wr_hist_PACK_today(cntr)[0] != 0:
             err_msg = 'wr_hist_PACK_today => ' + rq[1]
             cntr.log.wr_log_error(err_msg)
@@ -263,7 +272,7 @@ def get_cfg_PACK(cntr):
         return [0, 'OK']
 #=======================================================================
 def copy_data_FUT(cntr):
-    # copy data from TERM to table data_FUT from DB cntr.db_PACK
+    # copy data from table data_FUT  into cntr.db_PACK
     rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
     if rq[0] != 0:
         err_msg = 'cntr.db_FUT_data.get_table_db_with(data_FUT) ' + rq[1]
@@ -283,7 +292,6 @@ def copy_hist_FUT_today(cntr):
     # copy hist_today from TERM to table hist_FUT from DB cntr.db_PACK
     rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
     if rq[0] == 0:
-        #hist_TODAY = []
         cntr.hist_fut_today = []
         buf_60_sec = 0
         if len(rq[1]) != 0:
@@ -298,14 +306,6 @@ def copy_hist_FUT_today(cntr):
                     if dtt.minute != buf_60_sec:
                         cntr.hist_fut_today.append(item)
                         buf_60_sec = dtt.minute
-
-                #if len(cntr.hist_fut_today) == 0:
-                    #cntr.hist_fut_today.append(item)
-                    #buf_60_sec = item[0]
-                #else:
-                    #if (item[0] - buf_60_sec) > 50:
-                        #cntr.hist_fut_today.append(item)
-                        #buf_60_sec = item[0]
 
         req = cntr.db_PACK.rewrite_table('hist_FUT_today', cntr.hist_fut_today, val = '(?,?)')
         if req[0] != 0:
@@ -522,7 +522,6 @@ def wr_hist_PACK_today(cntr):
         #sg.Popup('OK !', 'ok rewrite_table hist_PACK_today  ' + str(len(name_list)))
         return [0, 'OK']
 #=======================================================================
-
 def parse_data_FUT(cntr):
     try:
         cntr.account  = Class_ACCOUNT()
@@ -564,22 +563,7 @@ def parse_data_FUT(cntr):
         #cntr.log.wr_log_error(err_msg)
         return [1, err_msg]
     return [0, 'ok']
-#=======================================================================
-#def get_table_data(cntr):
-    ## read table DATA / init cntr.data_fut & cntr.account
-    #rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
-    #if rq[0] == 0:
-        #cntr.term.str_in_file = rq[1]
-        ##print('db_FUT_data.get_table_db_with(data) \n', rq[1])
-        #rq  = cntr.term.parse_str_in_file()
-        #if rq[0] != 0:
-            #err_msg = 'get_table_data...parse_str_data_fut => ' + rq[1]
-            #return [1, err_msg]
-    #else:
-        #err_msg = 'get_table_db_with(data) ' + rq[1]
-        #return [1, err_msg]
-    #return [0, 'ok']
-#=======================================================================
+
 
 #=======================================================================
 def main():
@@ -606,7 +590,44 @@ def main():
     cntr = Class_CONTR(db_path_FUT, db_path_PACK, log_path, dt_start_date)
     init_cntr(cntr)
 
+    # init MENU
+    menu_def = [
+                ['Mode',    ['auto', 'manual', ],],
+                ['Service', ['Test SQL', ['data_FUT', 'hist_FUT', 'hist_FUT_TODAY', 'cfg_PACK', 'hist_PACK', 'hist_PACK_TODAY', ], ['Reserve']],],
+                ['Help', 'About...'],
+                ['Exit', 'Exit']
+                ]
 
+    def_txt, frm = [], '{: <15}  => {: ^15}\n'
+    def_txt.append(frm.format('path_db_FUT'  , db_path_FUT)  )
+    def_txt.append(frm.format('path_db_PACK' , db_path_PACK) )
+    def_txt.append(frm.format('path_file_LOG', log_path)     )
+    def_txt.append(frm.format('dt_start_date', dt_start_date))
+
+    tab_DATA = sg.Multiline( default_text=''.join(def_txt),
+                size=(50, 5), key='txt_data', autoscroll=False, focus=False)
+
+    # Display data
+    sg.SetOptions(element_padding=(0,0))
+
+    layout = [
+                [sg.Menu(menu_def, tearoff=False, key='menu_def')],
+                [tab_DATA],
+                [sg.T('',size=(60,2), font='Helvetica 8', key='txt_status'), sg.Quit(auto_size_button=True)],
+             ]
+
+    window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
+
+    # main cycle   -----------------------------------------------------
+    while True:
+        stroki = []
+
+        event, values = window.Read(timeout=3000 )  # period 3 sec
+        print('event = ', event, ' ..... values = ', values)
+
+        if event is None        : break
+        if event == 'Quit'      : break
+        if event == 'Exit'      : break
 
     return
 
