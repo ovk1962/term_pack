@@ -553,12 +553,10 @@ def main():
         if event == 'auto'      : mode = 'auto'
         if event == 'manual'    : mode = 'manual'
         if event == 'About...'  :
-            window.FindElement('txt_data').Update(disabled= True)
+            window.FindElement('txt_data').Update(disabled= False)
         if event == 'Convert'   :
             rq =  convert(cntr)
-
-
-        if event == '__TIMEOUT__'   :
+        if event == '__TIMEOUT__':
             rq = read_parse_data(cntr)
             if rq[0] != 0:
                 stroki.append(rq[1])
