@@ -240,7 +240,7 @@ def init_cntr(cntr):
     return [0, 'OK']
 #=======================================================================
 def get_cfg_PACK(cntr):
-    # read table cfg_PACK from DB cntr.db_PACK_arc
+    # read table cfg_PACK from DB cntr.db_PACK
     # init cntr.koef_pack
     rq  = cntr.db_PACK.get_table_db_with('cfg_PACK')
     if rq[0] != 0:
@@ -263,7 +263,7 @@ def get_cfg_PACK(cntr):
         return [0, 'OK']
 #=======================================================================
 def copy_data_FUT(cntr):
-    # copy data from TERM to table data_FUT from DB cntr.db_PACK_arc
+    # copy data from TERM to table data_FUT from DB cntr.db_PACK
     rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
     if rq[0] != 0:
         err_msg = 'cntr.db_FUT_data.get_table_db_with(data_FUT) ' + rq[1]
@@ -280,7 +280,7 @@ def copy_data_FUT(cntr):
     return [0, 'ok']
 #=======================================================================
 def copy_hist_FUT_today(cntr):
-    # copy hist_today from TERM to table hist_FUT from DB cntr.db_PACK_arc
+    # copy hist_today from TERM to table hist_FUT from DB cntr.db_PACK
     rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
     if rq[0] == 0:
         #hist_TODAY = []
@@ -317,7 +317,7 @@ def copy_hist_FUT_today(cntr):
     return [0, 'ok']
 #=======================================================================
 def get_hist_FUT(cntr):
-    # read table hist_FUT from DB cntr.db_PACK_arc
+    # read table hist_FUT from DB cntr.db_PACK
     rq  = cntr.db_PACK.get_table_db_with('hist_FUT')
     if rq[0] != 0:
         sg.Popup('Error hist_FUT!',  rq[1])
