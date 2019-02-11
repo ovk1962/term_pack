@@ -150,7 +150,20 @@ class Class_SQLite():
 def main():
     # init program config
     dirr = os.path.abspath(os.curdir)
-    db_path_FUT, name_trm, file_path_DATA, log_path = dirr + '\\DB\\term_pack.sqlite', '', '', ''
+    db_path_PACK, name_trm, log_path, dt_start_date = dirr + '\\DB\\term_pack.sqlite', '', '', ''
+
+    path_DB  = Class_SQLite(db_path_PACK)
+    rq  = path_DB.get_table_db_with('cfg_SOFT')
+    if rq[0] != 0:
+        print('Can not read DB => ' + db_path_PACK)
+        sg.PopupError('Can not read DB => term_pack.sqlite !', rq[1])
+        return
+    for item in rq[1]:
+        if item[0] == 'titul'         : name_trm        = item[1]
+        if item[0] == 'path_file_LOG' : log_path        = dirr + item[1]
+        if item[0] == 'dt_start'      : dt_start_date   = item[1]
+
+    print('{: <15}\n{: <25}\n{: <15}'.format(name_trm, log_path, dt_start_date))
 
     return
 
