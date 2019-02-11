@@ -145,6 +145,20 @@ class Class_SQLite():
 
         return r_get_table_db
 #=======================================================================
+class Class_CONTR():
+    ''' There are 2 history tables of FUT -
+    file_path_DATA  - file data from terminal QUIK
+    db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
+    '''
+    def __init__(self, db_path_PACK, log_path):
+        #
+        self.db_path_PACK = db_path_PACK       # path DB data & hist
+        self.db_PACK      = Class_SQLite(self.db_path_PACK)
+
+        # init LOGger
+        self.log  = Class_LOGGER(log_path)
+        self.log.wr_log_info('*** START ***')
+#=======================================================================
 
 #=======================================================================
 def main():
@@ -163,7 +177,11 @@ def main():
         if item[0] == 'path_file_LOG' : log_path        = dirr + item[1]
         if item[0] == 'dt_start'      : dt_start_date   = item[1]
 
-    print('{: <15}\n{: <25}\n{: <15}'.format(name_trm, log_path, dt_start_date))
+    #print('{: <15}\n{: <25}\n{: <15}'.format(name_trm, log_path, dt_start_date))
+
+    # init CONTR
+    cntr = Class_CONTR(db_path_PACK, log_path)
+
 
     return
 
