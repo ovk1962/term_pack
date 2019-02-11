@@ -57,6 +57,20 @@ class Class_FUT():
         self.sSell_qty = 0
         self.sFut_go = 0.0
 #=======================================================================
+class Class_PACK():
+    def __init__(self):
+        self.ind= 0
+        self.dt = ''
+        self.tm = ''
+        self.pAsk = 0.0
+        self.pBid = 0.0
+        self.EMAf = 0.0
+        self.EMAf_rnd = 0.0
+        self.cnt_EMAf_rnd = 0.0
+        self.AMA = 0.0
+        self.AMA_rnd = 0.0
+        self.cnt_AMA_rnd = 0.0
+#=======================================================================
 class Class_SQLite():
     def __init__(self, path_db):
         self.path_db = path_db
@@ -153,10 +167,135 @@ class Class_CONTR():
         #
         self.db_path_PACK = db_path_PACK       # path DB data & hist
         self.db_PACK      = Class_SQLite(self.db_path_PACK)
-
+        #
+        self.hist_fut        = []   # массив котировок фьючей  60 s
+        self.hist_fut_today  = []   # массив котировок фьючей  60 s
+        self.hist_pack       = []   # массив котировок packets 60 s
+        self.hist_pack_today = []   # массив котировок packets 60 s
+        #
+        self.data_fut = []    # list of Class_FUT()
+        self.account  = ''    # obj Class_ACCOUNT()
+        #
+        self.koef_pack  = []  # массив списков-характеристик packets
         # init LOGger
         self.log  = Class_LOGGER(log_path)
         self.log.wr_log_info('*** START ***')
+#=======================================================================
+def init_cntr(cntr):
+    #--- init FUT cntr.data_fut & cntr.account -------------
+    rq  = get_cfg_PACK(cntr)
+    if rq[0] != 0:
+        err_msg = 'get_cfg_PACK => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+
+    rq  = copy_data_FUT(cntr)
+    if rq[0] != 0:
+        err_msg = 'copy_data_FUT => ' + rq[1]
+        cntr.log.wr_log_error(err_msg)
+        sg.Popup('Error !', err_msg)
+        return [1, err_msg]
+
+    print('init_cntr - OK')
+    return [0, 'OK']
+#=======================================================================
+def get_cfg_PACK(cntr):
+    # read table cfg_PACK from DB cntr.db_PACK_arc
+    # init cntr.koef_pack
+    rq  = cntr.db_PACK.get_table_db_with('cfg_PACK')
+    if rq[0] != 0:
+        sg.Popup('Error cfg_PACK!',  rq[1])
+        return [1, rq[1]]
+    else:
+        for i_mdl, item in enumerate(rq[1]):
+            cntr.koef_pack.append([])
+            #   ['pckt0', ['0:2:SR, 9:-20:MX'], '222:100', '0.1:0.01:22:100']
+            cntr.koef_pack[i_mdl].append(rq[1][i_mdl][0])
+            cntr.koef_pack[i_mdl].append(rq[1][i_mdl][1].split(','))
+            cntr.koef_pack[i_mdl].append(rq[1][i_mdl][2])
+            cntr.koef_pack[i_mdl].append(rq[1][i_mdl][3])
+            cntr.koef_pack[i_mdl].append(0) # NULL price for PACK
+            print(cntr.koef_pack[i_mdl])
+        print('___ Totally PACKETs ___ ', len(cntr.koef_pack))
+        for item in cntr.koef_pack:
+            cntr.hist_pack.append([])
+            cntr.hist_pack_today.append([])
+        return [0, 'OK']
+#=======================================================================
+def copy_data_FUT(cntr):
+    # copy data from TERM to table data_FUT from DB cntr.db_PACK_arc
+    rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
+    if rq[0] != 0:
+        err_msg = 'cntr.db_FUT_data.get_table_db_with(data_FUT) ' + rq[1]
+        return [1, err_msg]
+
+    req = cntr.db_PACK.rewrite_table('data_FUT', rq[1], val = '(?)')
+    if req[0] != 0:
+        err_msg = 'cntr.db_PACK.rewrite_table(data_FUT) ' + req[1]
+        return [1, err_msg]
+
+    cntr.data_fut = rq[1][:]
+    parse_data_FUT(cntr)
+    print('data_fut = ', cntr.data_fut)
+    return [0, 'ok']
+#=======================================================================
+def parse_data_FUT(cntr):
+    try:
+        cntr.account  = Class_ACCOUNT()
+        # format of list data_fut:
+        #   0   => string of DATA / account.acc_date
+        #   1   => [account.acc_balance/acc_profit/acc_go/acc_depo]
+        #   2 ... 22  => Class_FUT()
+        #print(self.str_in_file)
+        data_fut = []
+        for i, item in enumerate(list(cntr.data_fut)):
+            list_item = ''.join(item[0]).replace(',','.').split('|')
+            if   i == 0:
+                cntr.account.acc_date  = list_item[0]
+                #cntr.data_fut.append(self.account.acc_date)
+            elif i == 1:
+                cntr.account.acc_balance = float(list_item[0])
+                cntr.account.acc_profit  = float(list_item[1])
+                cntr.account.acc_go      = float(list_item[2])
+                cntr.account.acc_depo    = float(list_item[3])
+            else:
+                b_fut = Class_FUT()
+                b_fut.sP_code      = list_item[0]
+                b_fut.sRest        = int  (list_item[1])
+                b_fut.sVar_margin  = float(list_item[2])
+                b_fut.sOpen_price  = float(list_item[3])
+                b_fut.sLast_price  = float(list_item[4])
+                b_fut.sAsk         = float(list_item[5])
+                b_fut.sBuy_qty     = int  (list_item[6])
+                b_fut.sBid         = float(list_item[7])
+                b_fut.sSell_qty    = int  (list_item[8])
+                b_fut.sFut_go      = float(list_item[9])
+                data_fut.append(b_fut)
+        cntr.data_fut = data_fut[:]
+        print('account = ', cntr.account.acc_date)
+        print('cntr.data_fut => \n', cntr.data_fut[0].sP_code)
+    except Exception as ex:
+        err_msg = 'parse_str_in_file / ' + str(ex)
+        print(err_msg)
+        #cntr.log.wr_log_error(err_msg)
+        return [1, err_msg]
+    return [0, 'ok']
+#=======================================================================
+#def get_table_data(cntr):
+    ## read table DATA / init cntr.data_fut & cntr.account
+    #rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
+    #if rq[0] == 0:
+        #cntr.term.str_in_file = rq[1]
+        ##print('db_FUT_data.get_table_db_with(data) \n', rq[1])
+        #rq  = cntr.term.parse_str_in_file()
+        #if rq[0] != 0:
+            #err_msg = 'get_table_data...parse_str_data_fut => ' + rq[1]
+            #return [1, err_msg]
+    #else:
+        #err_msg = 'get_table_db_with(data) ' + rq[1]
+        #return [1, err_msg]
+    #return [0, 'ok']
 #=======================================================================
 
 #=======================================================================
@@ -182,7 +321,7 @@ def main():
 
     # init CONTR
     cntr = Class_CONTR(db_path_FUT, db_path_PACK, log_path)
-    #init_cntr(cntr)
+    init_cntr(cntr)
 
 
 
