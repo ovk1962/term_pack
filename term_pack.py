@@ -568,9 +568,10 @@ def parse_data_FUT(cntr):
 #=======================================================================
 def main():
     # init program config
-    dirr = os.path.abspath(os.curdir)
-    db_path_FUT  = dirr + '\\DB\\term_today.sqlite'
-    db_path_PACK = dirr + '\\DB\\term_pack.sqlite'
+    dirr, sub_dirr = os.path.abspath(os.curdir), '\\DB\\'
+    path_FUT, path_PACK = 'term_today.sqlite', 'term_pack.sqlite'
+    db_path_FUT  = dirr + sub_dirr + path_FUT
+    db_path_PACK = dirr + sub_dirr + path_PACK
     name_trm, log_path, dt_start_date =  '', '', ''
 
     path_DB  = Class_SQLite(db_path_PACK)
@@ -599,8 +600,8 @@ def main():
                 ]
 
     def_txt, frm = [], '{: <15}  => {: ^15}\n'
-    def_txt.append(frm.format('path_db_FUT'  , db_path_FUT)  )
-    def_txt.append(frm.format('path_db_PACK' , db_path_PACK) )
+    def_txt.append(frm.format('path_db_FUT'  , path_FUT)  )
+    def_txt.append(frm.format('path_db_PACK' , path_PACK) )
     def_txt.append(frm.format('path_file_LOG', log_path)     )
     def_txt.append(frm.format('dt_start_date', dt_start_date))
 
@@ -621,13 +622,14 @@ def main():
     # main cycle   -----------------------------------------------------
     while True:
         stroki = []
-
-        event, values = window.Read(timeout=3000 )  # period 3 sec
+        event, values = window.Read(timeout = 3000 )  # period 3 sec
         print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
         if event == 'Quit'      : break
         if event == 'Exit'      : break
+        if event == '__TIMEOUT__':
+            pass
 
     return
 
