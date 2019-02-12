@@ -191,35 +191,25 @@ def init_cntr(cntr):
     rq  = get_cfg_PACK(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'get_cfg_PACK => ', str(rq[1]), PopUp = True)
-        #err_msg = 'get_cfg_PACK => ' + rq[1]
-        #cntr.log.wr_log_error(err_msg)
-        #sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
     # init cntr.data_fut & parse FUT cntr.data_fut & cntr.account
     rq  = copy_data_FUT(cntr)
     if rq[0] != 0:
-        error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]), PopUp = True)
-        #err_msg = 'copy_data_FUT => ' + rq[1]
-        #cntr.log.wr_log_error(err_msg)
-        #sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]))
         return [1, err_msg]
 
     # copy hist_today table hist_FUT + filtr TF = 1 min +
     # rewrite into DB cntr.db_PACK
     rq  = copy_hist_FUT_today(cntr)
     if rq[0] != 0:
-        err_msg = 'copy_hist_FUT_today => ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]))
         return [1, err_msg]
 
     # read table hist_FUT + copy into cntr.db_PACK from cntr.start_sec
     rq  = get_hist_FUT(cntr)
     if rq[0] != 0:
-        err_msg = 'get_hist_FUT => ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'get_hist_FUT => ', str(rq[1]))
         return [1, err_msg]
 
     # init + calc cntr.hist_pack for all PACKs
@@ -230,9 +220,7 @@ def init_cntr(cntr):
     # rewrite table hist_PACK
     rq  = wr_hist_PACK(cntr)
     if rq[0] != 0:
-        err_msg = 'wr_hist_PACK => ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'wr_hist_PACK => ', str(rq[1]))
         return [1, err_msg]
 
     # init + calc cntr.hist_pack_today for all PACKs
@@ -242,9 +230,7 @@ def init_cntr(cntr):
 
         # rewrite table hist_pack_today
         if wr_hist_PACK_today(cntr)[0] != 0:
-            err_msg = 'wr_hist_PACK_today => ' + rq[1]
-            cntr.log.wr_log_error(err_msg)
-            sg.Popup('Error !', err_msg)
+            error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]))
             return [1, err_msg]
 
     print('init_cntr - OK')
@@ -502,8 +488,8 @@ def wr_hist_PACK(cntr):
     rq = cntr.db_PACK.rewrite_table('hist_PACK', name_list, val = '(?,?)')
     if rq[0] != 0:
         err_msg = 'rewrite_table hist_PACK ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        #cntr.log.wr_log_error(err_msg)
+        #sg.Popup('Error !', err_msg)
         return [1, err_msg]
     else:
         cntr.log.wr_log_info('rewrite_table hist_PACK  - OK')
@@ -515,9 +501,9 @@ def wr_hist_PACK_today(cntr):
     name_list = prepair_hist_PACK(cntr, b_today = True)
     rq = cntr.db_PACK.rewrite_table('hist_PACK_today', name_list, val = '(?,?)')
     if rq[0] != 0:
-        err_msg = 'rewrite_table hist_PACK_today ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        err_msg = 'rewrite_table hist_PACK_today   ' + rq[1]
+        #cntr.log.wr_log_error(err_msg)
+        #sg.Popup('Error !', err_msg)
         return [1, err_msg]
     else:
         cntr.log.wr_log_info('rewrite_table hist_PACK_today  - OK')
