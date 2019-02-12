@@ -319,6 +319,7 @@ class Class_CONTR():
     db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
     '''
     def __init__(self, file_path_DATA, db_path_FUT, log_path):
+        self.name_trm = ''
         #
         self.file_path_DATA  = file_path_DATA    # path file DATA
         self.term            = Class_TERM(self.file_path_DATA)
@@ -419,7 +420,8 @@ def convert_sql_txt(cntr, arr):
         term_dt = arr_hist[-1][1].split('|')[0]
         dtt = datetime.strptime(str(term_dt), "%d.%m.%Y %H:%M:%S")
         #
-        for item in arr_hist:
+        #for item in arr_hist:
+        for i_item, item in enumerate(arr_hist):
             if last_day in item[1]:
                 str_bf = []
                 # convert TUPLE in LIST & delete last '|'
@@ -443,27 +445,29 @@ def convert_sql_txt(cntr, arr):
                     if dtt.minute != buf_60_sec:
                         hist_out_archiv.append(item)
                         buf_60_sec = dtt.minute
+            if (i_item % 25 ) == 0:
+                sg.OneLineProgressMeter('convert_sql_txt', i_item+1, len(arr_hist)-25, 'key', orientation='h')
         #
         str_month = str(dtt.month)
         if dtt.month < 10:       str_month = '0' + str(dtt.month)
         str_day = str(dtt.day)
         if dtt.day < 10:           str_day = '0' + str(dtt.day)
         #
-        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_report' + '.txt'
+        path_file = cntr.name_trm + '_' + str(dtt.year) + '-' + str_month + '-' + str_day + '_report' + '.txt'
         cntr.log.wr_log_info('Report export for ' + path_file)
         if os.path.exists(path_file):  os.remove(path_file)
         f = open(path_file,'w')
         for item in hist_out_report:   f.writelines(item + '\n')
         f.close()
         #
-        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_archiv_fut' + '.csv'
+        path_file = cntr.name_trm + '_' + str(dtt.year) + '-' + str_month + '-' + str_day + '_hist_FUT' + '.csv'
         cntr.log.wr_log_info('Archiv for ' + path_file)
         if os.path.exists(path_file):  os.remove(path_file)
         f = open(path_file,'w')
         for item in hist_out_archiv:   f.writelines(str(int(item[0])) + ';' + item[1] + '\n')
         f.close()
         #
-        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_hist_ALFA' + '.txt'
+        path_file = str(dtt.year) + '-' + str_month + '-' + str_day + '_hist_' + cntr.name_trm + '.txt'
         if os.path.exists(path_file):  os.remove(path_file)
         f = open(path_file,'w')
         for item in hist_out:          f.writelines(item + '\n')
@@ -483,7 +487,7 @@ def convert(cntr):
 def main():
     # init program config
     dirr = os.path.abspath(os.curdir)
-    db_path_FUT, name_trm, file_path_DATA, log_path = dirr + '\\DB\\term_today.sqlite', '', '', ''
+    db_path_FUT, nm_trm, file_path_DATA, log_path = dirr + '\\DB\\term_today.sqlite', '', '', ''
 
     path_DB  = Class_SQLite(db_path_FUT)
     rq  = path_DB.get_table_db_with('cfg_SOFT')
@@ -492,12 +496,13 @@ def main():
         sg.PopupError('Can not read DB => term_today.sqlite !')
         return
     for item in rq[1]:
-        if item[0] == 'titul'         : name_trm        = item[1]
+        if item[0] == 'titul'         : nm_trm          = item[1]
         if item[0] == 'path_file_DATA': file_path_DATA  = item[1]
         if item[0] == 'path_file_LOG' : log_path        = dirr + item[1]
 
     # init CONTR
     cntr = Class_CONTR(file_path_DATA, db_path_FUT, log_path)
+    cntr.name_trm = nm_trm
     init_cntr(cntr)
 
     # init MENU
@@ -530,7 +535,7 @@ def main():
                 [sg.T('',size=(60,2), font='Helvetica 8', key='txt_status'), sg.Quit(auto_size_button=True)],
              ]
 
-    window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
+    window = sg.Window(nm_trm, grab_anywhere=True).Layout(layout).Finalize()
 
     mode = 'auto'
 
