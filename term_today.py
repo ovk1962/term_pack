@@ -259,6 +259,7 @@ class Class_SQLite():
             self.cur = self.conn.cursor()
             self.cur.execute("DELETE FROM " + name_tbl)
             self.conn.commit()
+            self.conn.execute("VACUUM")
             self.cur.close()
             self.conn.close()
             r_reset_tbl = [0, 'OK']
@@ -473,6 +474,8 @@ def convert_sql_txt(cntr, arr):
         for item in hist_out:          f.writelines(item + '\n')
         f.close()
         cntr.log.wr_log_info('Hist export for ' + path_file)
+    else:
+        sg.Popup('ooop-s-s !', '\n   arr_hist is EMPTY !  \n')
 #=======================================================================
 def convert(cntr):
     cntr.log.wr_log_info('convert_sql_txt')
@@ -483,6 +486,11 @@ def convert(cntr):
     else:
         cntr.log.wr_log_error(rq[1])
         sg.Popup('ERROR !', rq[1])
+#=======================================================================
+def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
+    err_msg = msg_log + msg_rq_1
+    cntr.log.wr_log_error(err_msg)
+    if PopUp:  sg.PopupError('Error !', err_msg)
 #=======================================================================
 def main():
     # init program config
@@ -508,7 +516,7 @@ def main():
     # init MENU
     menu_def = [
                 ['Mode',    ['auto', 'manual', ],],
-                ['Service', ['Test SQL', ['SQL tbl DATA', 'SQL tbl TODAY', ], ['Convert']],],
+                ['Service', ['Test SQL', ['SQL tbl DATA', 'SQL tbl TODAY', ], 'Convert tbl TODAY', 'VACUUM tbl TODAY'],],
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
@@ -543,7 +551,7 @@ def main():
     while True:
         stroki = []
         if mode == 'auto':
-            event, values = window.Read(timeout=1000 )  # period 1 sec
+            event, values = window.Read(timeout=2500 )  # period 2,5 sec
         else:
             event, values = window.Read(timeout=55000)  # period 55 sec)
         #print('event = ', event, ' ..... values = ', values)
@@ -555,8 +563,20 @@ def main():
         if event == 'manual'    : mode = 'manual'
         if event == 'About...'  :
             window.FindElement('txt_data').Update(disabled= False)
-        if event == 'Convert'   :
+        if event == 'Convert tbl TODAY'  :
             rq =  convert(cntr)
+            if rq[0] != 0:
+                err_msg = 'convert hist_FUT_today ' + rq[1]
+                cntr.log.wr_log_error(err_msg)
+                sg.PopupError('Error !', err_msg)
+        if event == 'VACUUM tbl TODAY'   :
+            rq = cntr.db_FUT_data.reset_table_db('hist_FUT_today')
+            if rq[0] != 0:
+                error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]), PopUp = True)
+
+            else:
+                error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]))
+        #reset_table_db(self, name_tbl)
         if event == '__TIMEOUT__':
             rq = read_parse_data(cntr)
             if rq[0] != 0:
