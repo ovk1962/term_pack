@@ -446,8 +446,8 @@ def convert_sql_txt(cntr, arr):
                     if dtt.minute != buf_60_sec:
                         hist_out_archiv.append(item)
                         buf_60_sec = dtt.minute
-            if (i_item % 25 ) == 0:
-                sg.OneLineProgressMeter('convert_sql_txt', i_item+1, len(arr_hist)-25, 'key', orientation='h')
+            #if (i_item % 25 ) == 0:
+            #    sg.OneLineProgressMeter('convert_sql_txt', i_item+1, len(arr_hist)-35, 'key', orientation='h')
         #
         str_month = str(dtt.month)
         if dtt.month < 10:       str_month = '0' + str(dtt.month)
@@ -483,9 +483,11 @@ def convert(cntr):
     if rq[0] == 0:
         convert_sql_txt(cntr, rq[1])
         sg.Popup('OK !', 'Check info in log file !')
+        return [0, 'ok']
     else:
         cntr.log.wr_log_error(rq[1])
         sg.Popup('ERROR !', rq[1])
+        return [1, rq[0]]
 #=======================================================================
 def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
     err_msg = msg_log + msg_rq_1

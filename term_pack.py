@@ -571,7 +571,10 @@ def check_stat_DB(cntr):
         else:
             cntr.dat_FUT_data = buf_stat_time
     return [0, 'ok']
-
+#=======================================================================
+def update_db(cntr):
+    pass
+    return [0, 'ok']
 #=======================================================================
 def main():
     # init program config
@@ -636,9 +639,9 @@ def main():
         if event == 'Exit'      : break
         if event == '__TIMEOUT__':
             if check_stat_DB(cntr)[0] == 0:
+                update_db(cntr)
                 stroki.append(cntr.account.acc_date)
                 stroki.append(str(cntr.dat_FUT_data) + '   DB is modifed !')
-                #print(str(cntr.dat_FUT_data) + '   DB is modifed !')
             else:
                 stroki.append(cntr.account.acc_date)
 
