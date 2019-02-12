@@ -507,7 +507,7 @@ def wr_hist_PACK_today(cntr):
         #sg.Popup('Error !', err_msg)
         return [1, err_msg]
     else:
-        cntr.log.wr_log_info('rewrite_table hist_PACK_today  - OK')
+        #cntr.log.wr_log_info('rewrite_table hist_PACK_today  - OK')
         #sg.Popup('OK !', 'ok rewrite_table hist_PACK_today  ' + str(len(name_list)))
         return [0, 'OK']
 #=======================================================================
@@ -573,7 +573,24 @@ def check_stat_DB(cntr):
     return [0, 'ok']
 #=======================================================================
 def update_db(cntr):
-    pass
+    rq  = copy_data_FUT(cntr)
+    if rq[0] != 0:
+        error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]), PopUp = False)
+        return [1, err_msg]
+
+    rq  = copy_hist_FUT_today(cntr)
+    if rq[0] != 0:
+        error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]), PopUp = False)
+        return [1, err_msg]
+
+    if len(cntr.hist_fut_today) != 0:
+        for i_pack, item in enumerate(cntr.koef_pack):
+            calc_hist_PACK_today(cntr, i_pack)
+
+        # rewrite table hist_pack_today
+        if wr_hist_PACK_today(cntr)[0] != 0:
+            error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]), PopUp = False)
+            return [1, err_msg]
     return [0, 'ok']
 #=======================================================================
 def main():
