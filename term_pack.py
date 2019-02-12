@@ -190,17 +190,19 @@ def init_cntr(cntr):
     # init cntr.koef_pack
     rq  = get_cfg_PACK(cntr)
     if rq[0] != 0:
-        err_msg = 'get_cfg_PACK => ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'get_cfg_PACK => ', str(rq[1]), PopUp = True)
+        #err_msg = 'get_cfg_PACK => ' + rq[1]
+        #cntr.log.wr_log_error(err_msg)
+        #sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
     # init cntr.data_fut & parse FUT cntr.data_fut & cntr.account
     rq  = copy_data_FUT(cntr)
     if rq[0] != 0:
-        err_msg = 'copy_data_FUT => ' + rq[1]
-        cntr.log.wr_log_error(err_msg)
-        sg.Popup('Error !', err_msg)
+        error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]), PopUp = True)
+        #err_msg = 'copy_data_FUT => ' + rq[1]
+        #cntr.log.wr_log_error(err_msg)
+        #sg.Popup('Error !', err_msg)
         return [1, err_msg]
 
     # copy hist_today table hist_FUT + filtr TF = 1 min +
@@ -563,7 +565,12 @@ def parse_data_FUT(cntr):
         #cntr.log.wr_log_error(err_msg)
         return [1, err_msg]
     return [0, 'ok']
-
+#=======================================================================
+def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
+    err_msg = msg_log + msg_rq_1
+    cntr.log.wr_log_error(err_msg)
+    if PopUp:  sg.PopupError('Error !', err_msg)
+#=======================================================================
 
 #=======================================================================
 def main():
