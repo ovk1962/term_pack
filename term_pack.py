@@ -168,6 +168,7 @@ class Class_CONTR():
         #
         self.db_path_FUT  = db_path_FUT       # path DB data & hist
         self.db_FUT_data  = Class_SQLite(self.db_path_FUT)
+        self.dat_FUT_data = 0       # curv stamptime db_path_FUT
         #
         self.db_path_PACK = db_path_PACK       # path DB data & hist
         self.db_PACK      = Class_SQLite(self.db_path_PACK)
@@ -557,6 +558,19 @@ def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
     cntr.log.wr_log_error(err_msg)
     if PopUp:  sg.PopupError('Error !', err_msg)
 #=======================================================================
+def check_stat_DB(cntr):
+    # check time modificated of file
+    buf_stat_time = int(os.stat(cntr.db_path_FUT).st_mtime)
+    if cntr.dat_FUT_data == 0:
+        cntr.dat_FUT_data = buf_stat_time
+        return [1, '  first start  ']
+    else:
+        if ((buf_stat_time - cntr.dat_FUT_data) < 7):
+            str_dt_file = datetime.fromtimestamp(cntr.dat_FUT_data).strftime('%H:%M:%S')
+            return [3, str_dt_file + ' is not modifed']
+        else:
+            cntr.dat_FUT_data = buf_stat_time
+    return [0, 'ok']
 
 #=======================================================================
 def main():
@@ -595,11 +609,10 @@ def main():
     def_txt, frm = [], '{: <15}  => {: ^15}\n'
     def_txt.append(frm.format('path_db_FUT'  , path_FUT)  )
     def_txt.append(frm.format('path_db_PACK' , path_PACK) )
-    def_txt.append(frm.format('path_file_LOG', log_path)     )
     def_txt.append(frm.format('dt_start_date', dt_start_date))
 
     tab_DATA = sg.Multiline( default_text=''.join(def_txt),
-                size=(50, 5), key='txt_data', autoscroll=False, focus=False)
+                size=(55, 5), key='txt_data', autoscroll=False, focus=False)
 
     # Display data
     sg.SetOptions(element_padding=(0,0))
@@ -615,15 +628,25 @@ def main():
     # main cycle   -----------------------------------------------------
     while True:
         stroki = []
-        event, values = window.Read(timeout = 3000 )  # period 3 sec
-        print('event = ', event, ' ..... values = ', values)
+        event, values = window.Read(timeout = 3500 )  # period 3,5 sec
+        #print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
         if event == 'Quit'      : break
         if event == 'Exit'      : break
         if event == '__TIMEOUT__':
-            pass
+            if check_stat_DB(cntr)[0] == 0:
+                stroki.append(cntr.account.acc_date)
+                stroki.append(str(cntr.dat_FUT_data) + '   DB is modifed !')
+                #print(str(cntr.dat_FUT_data) + '   DB is modifed !')
+            else:
+                stroki.append(cntr.account.acc_date)
 
+        window.FindElement('txt_data').Update('\n'.join(stroki))
+        txt_frmt = '%Y.%m.%d  %H:%M:%S'
+        stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
+        stts += 'event = ' + event
+        window.FindElement('txt_status').Update(stts)
     return
 
 if __name__ == '__main__':
