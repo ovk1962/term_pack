@@ -555,7 +555,7 @@ def main():
     window = sg.Window(nm_trm, grab_anywhere=True).Layout(layout).Finalize()
 
     mode = 'auto'
-
+    frm_str = '{: <15}{: ^15}'
     # main cycle   -----------------------------------------------------
     while True:
         stroki = []
@@ -588,11 +588,10 @@ def main():
                     error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]), PopUp = True)
 
         if event == 'SQL tbl DATA'       :
-            frm_ftr = '{: <15}{: ^15}'
-            stroki.append(frm_ftr.format('DATE    ', cntr.term.account.acc_date))
-            stroki.append(frm_ftr.format('PROF    ', str(cntr.term.account.acc_profit)))
-            stroki.append(frm_ftr.format('_GO_    ', str(cntr.term.account.acc_go)))
-            stroki.append(frm_ftr.format('DEPO    ', str(cntr.term.account.acc_depo)))
+            stroki.append(frm_str.format('DATE    ', cntr.term.account.acc_date))
+            stroki.append(frm_str.format('PROF    ', str(cntr.term.account.acc_profit)))
+            stroki.append(frm_str.format('_GO_    ', str(cntr.term.account.acc_go)))
+            stroki.append(frm_str.format('DEPO    ', str(cntr.term.account.acc_depo)))
 
         if event == 'SQL tbl TODAY'      :
             rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
@@ -610,7 +609,10 @@ def main():
             rq = read_parse_data(cntr)
             if rq[0] != 0:
                 stroki.append(rq[1])
-                stroki.append(cntr.term.account.acc_date)
+                stroki.append(frm_str.format('DATE    ', cntr.term.account.acc_date))
+                stroki.append(frm_str.format('PROF    ', str(cntr.term.account.acc_profit)))
+                stroki.append(frm_str.format('_GO_    ', str(cntr.term.account.acc_go)))
+                stroki.append(frm_str.format('DEPO    ', str(cntr.term.account.acc_depo)))
             else:
                 # update PROFIT in txt_bal
                 profit = cntr.term.account.acc_profit
