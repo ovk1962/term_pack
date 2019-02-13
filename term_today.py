@@ -588,10 +588,11 @@ def main():
                     error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]), PopUp = True)
 
         if event == 'SQL tbl DATA'       :
-            stroki.append('Date____' + cntr.term.account.acc_date       )
-            stroki.append('Profit__' + str(cntr.term.account.acc_profit))
-            stroki.append('GO______' + str(cntr.term.account.acc_go)    )
-            stroki.append('DEPO____' + str(cntr.term.account.acc_depo)  )
+            frm_ftr = '{: <15}{: ^15}'
+            stroki.append(frm_ftr.format('DATE    ', cntr.term.account.acc_date))
+            stroki.append(frm_ftr.format('PROF    ', str(cntr.term.account.acc_profit)))
+            stroki.append(frm_ftr.format('_GO_    ', str(cntr.term.account.acc_go)))
+            stroki.append(frm_ftr.format('DEPO    ', str(cntr.term.account.acc_depo)))
 
         if event == 'SQL tbl TODAY'      :
             rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
@@ -609,6 +610,7 @@ def main():
             rq = read_parse_data(cntr)
             if rq[0] != 0:
                 stroki.append(rq[1])
+                stroki.append(cntr.term.account.acc_date)
             else:
                 # update PROFIT in txt_bal
                 profit = cntr.term.account.acc_profit
