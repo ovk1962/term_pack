@@ -151,7 +151,7 @@ class Class_SQLite():
                 self.table_db = self.cur.fetchall()    # read table name_tbl
                 r_get_table_db = [0, self.table_db]
         except Exception as ex:
-            r_get_table_db = [1, name_tbl + str(ex)]
+            r_get_table_db = [1, ' *'+ name_tbl + '* '+ str(ex)]
 
         return r_get_table_db
 #=======================================================================
@@ -192,26 +192,26 @@ def init_cntr(cntr):
     rq  = get_cfg_PACK(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'get_cfg_PACK => ', str(rq[1]), PopUp = True)
-        return [1, err_msg]
+        return [1, 'get_cfg_PACK => ' + str(rq[1])]
 
     # init cntr.data_fut & parse FUT cntr.data_fut & cntr.account
     rq  = copy_data_FUT(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]))
-        return [1, err_msg]
+        return [1, 'copy_data_FUT => ' + str(rq[1])]
 
     # copy hist_today table hist_FUT + filtr TF = 1 min +
     # rewrite into DB cntr.db_PACK
     rq  = copy_hist_FUT_today(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]))
-        return [1, err_msg]
+        return [1, 'copy_hist_FUT_today => ' + str(rq[1])]
 
     # read table hist_FUT + copy into cntr.db_PACK from cntr.start_sec
     rq  = get_hist_FUT(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'get_hist_FUT => ', str(rq[1]))
-        return [1, err_msg]
+        return [1, 'get_hist_FUT => ' + str(rq[1])]
 
     # init + calc cntr.hist_pack for all PACKs
     for i_pack, item in enumerate(cntr.koef_pack):
@@ -222,7 +222,7 @@ def init_cntr(cntr):
     rq  = wr_hist_PACK(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'wr_hist_PACK => ', str(rq[1]))
-        return [1, err_msg]
+        return [1, 'wr_hist_PACK => ' + str(rq[1])]
 
     # init + calc cntr.hist_pack_today for all PACKs
     if len(cntr.hist_fut_today) != 0:
@@ -232,7 +232,7 @@ def init_cntr(cntr):
         # rewrite table hist_pack_today
         if wr_hist_PACK_today(cntr)[0] != 0:
             error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]))
-            return [1, err_msg]
+            return [1, 'wr_hist_PACK_today => ' + str(rq[1])]
 
     print('init_cntr - OK')
     return [0, 'OK']
@@ -554,9 +554,9 @@ def parse_data_FUT(cntr):
     return [0, 'ok']
 #=======================================================================
 def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
-    err_msg = msg_log + msg_rq_1
-    cntr.log.wr_log_error(err_msg)
-    if PopUp:  sg.PopupError('Error !', err_msg)
+    cntr.log.wr_log_error(msg_log + msg_rq_1)
+    if PopUp == True:
+        sg.PopupError(msg_log + msg_rq_1)
 #=======================================================================
 def check_stat_DB(cntr):
     # check time modificated of file
@@ -576,12 +576,12 @@ def update_db(cntr):
     rq  = copy_data_FUT(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]), PopUp = False)
-        return [1, err_msg]
+        return [1, 'Error copy_data_FUT => ']
 
     rq  = copy_hist_FUT_today(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]), PopUp = False)
-        return [1, err_msg]
+        return [1, 'Error copy_hist_FUT_today => ']
 
     if len(cntr.hist_fut_today) != 0:
         for i_pack, item in enumerate(cntr.koef_pack):
@@ -590,7 +590,7 @@ def update_db(cntr):
         # rewrite table hist_pack_today
         if wr_hist_PACK_today(cntr)[0] != 0:
             error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]), PopUp = False)
-            return [1, err_msg]
+            return [1, 'Error wr_hist_PACK_today => ']
     return [0, 'ok']
 #=======================================================================
 def main():
