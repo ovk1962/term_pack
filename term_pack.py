@@ -565,9 +565,9 @@ def check_stat_DB(cntr):
         cntr.dat_FUT_data = buf_stat_time
         return [1, '  first start  ']
     else:
-        if ((buf_stat_time - cntr.dat_FUT_data) < 7):
+        if ((buf_stat_time - cntr.dat_FUT_data) < 55):
             str_dt_file = datetime.fromtimestamp(cntr.dat_FUT_data).strftime('%H:%M:%S')
-            return [3, str_dt_file + ' is not modifed']
+            return [3, str_dt_file + ' is not modifed 55 sec']
         else:
             cntr.dat_FUT_data = buf_stat_time
     return [0, 'ok']
@@ -656,9 +656,13 @@ def main():
         if event == 'Exit'      : break
         if event == '__TIMEOUT__':
             if check_stat_DB(cntr)[0] == 0:
-                update_db(cntr)
-                stroki.append(cntr.account.acc_date)
-                stroki.append(str(cntr.dat_FUT_data) + '   DB is modifed !')
+                rg = update_db(cntr)
+                if rq[0] != 0:
+                    error_msg_popup(cntr, 'update_db => ', str(rq[1]), PopUp = False)
+                    stroki.append('update_db => ERROR')
+                else:
+                    stroki.append(cntr.account.acc_date)
+                    stroki.append(str(cntr.dat_FUT_data) + '   DB is modifed !')
             else:
                 stroki.append(cntr.account.acc_date)
 
