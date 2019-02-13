@@ -447,7 +447,8 @@ def convert_sql_txt(cntr, arr):
                         hist_out_archiv.append(item)
                         buf_60_sec = dtt.minute
             #if (i_item % 25 ) == 0:
-            #    sg.OneLineProgressMeter('convert_sql_txt', i_item+1, len(arr_hist)-35, 'key', orientation='h')
+            #    sg.OneLineProgressMeter('convert_sql_txt', i_item+1, len(arr_hist)-1, 'key', orientation='h')
+
         #
         str_month = str(dtt.month)
         if dtt.month < 10:       str_month = '0' + str(dtt.month)
@@ -482,7 +483,7 @@ def convert(cntr):
     rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
     if rq[0] == 0:
         convert_sql_txt(cntr, rq[1])
-        sg.Popup('OK !', 'Check info in log file !')
+        #sg.Popup('OK !', 'Check info in log file !')
         return [0, 'ok']
     else:
         cntr.log.wr_log_error(rq[1])
@@ -496,8 +497,10 @@ def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
 #=======================================================================
 def main():
     # init program config
-    dirr = os.path.abspath(os.curdir)
-    db_path_FUT, nm_trm, file_path_DATA, log_path = dirr + '\\DB\\term_today.sqlite', '', '', ''
+    dirr, sub_dirr = os.path.abspath(os.curdir), '\\DB\\'
+    path_FUT = 'term_today.sqlite'
+    db_path_FUT  = dirr + sub_dirr + path_FUT
+    nm_trm, file_path_DATA, log_path = dirr + '\\DB\\term_today.sqlite', '', ''
 
     path_DB  = Class_SQLite(db_path_FUT)
     rq  = path_DB.get_table_db_with('cfg_SOFT')
@@ -518,7 +521,12 @@ def main():
     # init MENU
     menu_def = [
                 ['Mode',    ['auto', 'manual', ],],
-                ['Service', ['Test SQL', ['SQL tbl DATA', 'SQL tbl TODAY', ], 'Convert tbl TODAY', 'VACUUM tbl TODAY'],],
+                ['Service',
+                    [
+                        ['Test SQL',      ['SQL tbl DATA', 'SQL tbl TODAY'],
+                         'Hist FUT today',['Convert tbl TODAY', 'VACUUM tbl TODAY'],],
+                    ],
+                ],
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
@@ -527,9 +535,8 @@ def main():
                    ]
 
     def_txt, frm = [], '{: <15}  => {: ^15}\n'
-    def_txt.append(frm.format('path_file_DATA', file_path_DATA) )
-    def_txt.append(frm.format('path_db_FUT'   , db_path_FUT)    )
-    def_txt.append(frm.format('path_file_LOG' , log_path)       )
+    def_txt.append(frm.format('path_db_FUT'   , path_FUT))
+    def_txt.append(frm.format('path_file_DATA', file_path_DATA))
 
     tab_DATA    =  [
                     [sg.Multiline( default_text=''.join(def_txt),
@@ -565,20 +572,39 @@ def main():
         if event == 'manual'    : mode = 'manual'
         if event == 'About...'  :
             window.FindElement('txt_data').Update(disabled= False)
-        if event == 'Convert tbl TODAY'  :
-            rq =  convert(cntr)
-            if rq[0] != 0:
-                err_msg = 'convert hist_FUT_today ' + rq[1]
-                cntr.log.wr_log_error(err_msg)
-                sg.PopupError('Error !', err_msg)
-        if event == 'VACUUM tbl TODAY'   :
-            rq = cntr.db_FUT_data.reset_table_db('hist_FUT_today')
-            if rq[0] != 0:
-                error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]), PopUp = True)
 
+        if event == 'Convert tbl TODAY'  :
+            if sg.PopupYesNo('convert hist_FUT_today ?','If YES, then you have to wait a few seconds','') == 'Yes':
+                rq =  convert(cntr)
+                if rq[0] != 0:
+                    error_msg_popup(cntr, 'convert hist_FUT_today ', str(rq[1]), PopUp = True)
+                else:
+                    stroki.append('Now you can check info in log file !')
+
+        if event == 'VACUUM tbl TODAY'   :
+            if sg.PopupYesNo('CLEAR tbl TODAY ?', '') == 'Yes':
+                rq = cntr.db_FUT_data.reset_table_db('hist_FUT_today')
+                if rq[0] != 0:
+                    error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]), PopUp = True)
+
+        if event == 'SQL tbl DATA'       :
+            stroki.append('Date____' + cntr.term.account.acc_date       )
+            stroki.append('Profit__' + str(cntr.term.account.acc_profit))
+            stroki.append('GO______' + str(cntr.term.account.acc_go)    )
+            stroki.append('DEPO____' + str(cntr.term.account.acc_depo)  )
+
+        if event == 'SQL tbl TODAY'      :
+            rq  = cntr.db_FUT_data.get_table_db_with('hist_FUT_today')
+            if rq[0] == 0:
+                if len(rq[1]) != 0:
+                    stroki.append('First ' + rq[1][0][1].split('|')[0])
+                    stroki.append('..... ')
+                    stroki.append('Last  ' + rq[1][-1][1].split('|')[0])
+                else:
+                    stroki.append('TBL hist_FUT_today IS empty !')
             else:
-                error_msg_popup(cntr, 'reset_table_db hist_FUT_today ', str(rq[1]))
-        #reset_table_db(self, name_tbl)
+                stroki.append('Problem read TBL hist_FUT_today ')
+
         if event == '__TIMEOUT__':
             rq = read_parse_data(cntr)
             if rq[0] != 0:
