@@ -645,15 +645,30 @@ def main():
 
     window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
 
+    mode = 'auto'
+    frm_str = '{: <15}{: ^15}'
     # main cycle   -----------------------------------------------------
     while True:
         stroki = []
-        event, values = window.Read(timeout = 3500 )  # period 3,5 sec
+        if mode == 'auto':
+            event, values = window.Read(timeout=3500 )  # period 2,5 sec
+        else:
+            event, values = window.Read(timeout=55000)  # period 55 sec)
         #print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
         if event == 'Quit'      : break
         if event == 'Exit'      : break
+        if event == 'auto'      : mode = 'auto'
+        if event == 'manual'    : mode = 'manual'
+
+        if event == 'data_FUT'  :
+            print(sg.PopupScrolled(cntr.data_fut, auto_close=True))
+            stroki.append(frm_str.format('DATE    ', cntr.account.acc_date))
+            stroki.append(frm_str.format('PROF    ', str(cntr.account.acc_profit)))
+            stroki.append(frm_str.format('_GO_    ', str(cntr.account.acc_go)))
+            stroki.append(frm_str.format('DEPO    ', str(cntr.account.acc_depo)))
+
         if event == '__TIMEOUT__':
             if check_stat_DB(cntr)[0] == 0:
                 rg = update_db(cntr)
