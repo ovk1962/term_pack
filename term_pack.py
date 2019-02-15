@@ -600,6 +600,65 @@ def update_db(cntr):
                 return [1, 'Error wr_hist_PACK_today => ']
     return [0, 'ok']
 #=======================================================================
+def service_data_FUT(cntr):
+    rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
+    if rq[0] == 0:
+        sg.Popup(
+                 'data_FUT',
+                 '\n'.join(map(str,rq[1]))
+                )
+#=======================================================================
+def service_hist_FUT(cntr):
+    fut_F, fut_S, fut_L = cntr.hist_fut[0][1], cntr.hist_fut[1][1], cntr.hist_fut[-1][1]
+    pack_F, pack_S, pack_L = cntr.hist_pack[0][0], cntr.hist_pack[0][1], cntr.hist_pack[0][-1]
+    sg.Popup(
+             'hist_FUT/PACK   ',
+             '____________________________________________',
+             'len(hist_FUT)   ' + str(len(cntr.hist_fut)),
+             'first...' + fut_F.split('|')[0],
+             'second..' + fut_S.split('|')[0],
+             '........',
+             'last....' + fut_L.split('|')[0],
+             '____________________________________________',
+             'len(hist_pack)   ' + str(len(cntr.hist_pack[0])),
+             'first...' + pack_F.dt + '     ' + pack_F.tm,
+             'second..' + pack_S.dt + '     ' + pack_S.tm,
+             '........',
+             'last....' + pack_L.dt + '     ' + pack_L.tm,
+            )
+#=======================================================================
+def service_hist_TODAY(cntr):
+    fut_F, fut_S, fut_L = cntr.hist_fut_today[0][1], cntr.hist_fut_today[1][1], cntr.hist_fut_today[-1][1]
+    pack_F, pack_S, pack_L = cntr.hist_pack_today[0][0], cntr.hist_pack_today[0][1], cntr.hist_pack_today[0][-1]
+    sg.Popup(
+             'hist_FUT/PACK   ',
+             '____________________________________________',
+             'len(hist_FUT)   ' + str(len(cntr.hist_fut_today)),
+             'first...' + fut_F.split('|')[0],
+             'second..' + fut_S.split('|')[0],
+             '........',
+             'last....' + fut_L.split('|')[0],
+             '____________________________________________',
+             'len(hist_pack)   ' + str(len(cntr.hist_pack_today[0])),
+             'first...' + pack_F.dt + '     ' + pack_F.tm,
+             'second..' + pack_S.dt + '     ' + pack_S.tm,
+             '........',
+             'last....' + pack_L.dt + '     ' + pack_L.tm,
+            )
+#=======================================================================
+def service_cfg_PACK(cntr):
+    s_koef = []
+    for item in cntr.koef_pack :
+        s_jtem = ''
+        for jtem in item:
+            if type(jtem) is list:  s_jtem += ' ; '.join(jtem) + '  '
+            else:                   s_jtem += str(jtem) + '  '
+        s_koef.append(s_jtem)
+    sg.Popup(
+             'cfg_PACK',
+             '\n'.join(s_koef)
+            )
+#=======================================================================
 def main():
     # init program config
     dirr, sub_dirr = os.path.abspath(os.curdir), '\\DB\\'
@@ -628,7 +687,7 @@ def main():
     # init MENU
     menu_def = [
                 ['Mode',    ['auto', 'manual', ],],
-                ['Service', ['Test SQL', ['data_FUT', 'hist_FUT', 'hist_FUT_TODAY', 'cfg_PACK', 'hist_PACK', 'hist_PACK_TODAY', ], ['Reserve']],],
+                ['Service', ['Test SQL', ['data_FUT', 'hist_FUT', 'hist_FUT_TODAY', 'cfg_PACK', ], ['Reserve']],],
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
@@ -669,26 +728,11 @@ def main():
         if event == 'auto'      : mode = 'auto'
         if event == 'manual'    : mode = 'manual'
 
-        if event == 'data_FUT'  :
-            rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
-            if rq[0] == 0:
-                sg.Popup(
-                         'hist_FUT',
-                         '\n'.join(map(str,rq[1]))
-                        )
-
-        if event == 'cfg_PACK'  :
-            s_koef = []
-            for item in cntr.koef_pack :
-                s_jtem = ''
-                for jtem in item:
-                    if type(jtem) is list:  s_jtem += ' ; '.join(jtem) + '  '
-                    else:                   s_jtem += str(jtem) + '  '
-                s_koef.append(s_jtem)
-            sg.Popup(
-                     'cfg_PACK',
-                     '\n'.join(s_koef)
-                    )
+        # menu SERVICE
+        if event == 'data_FUT'      : service_data_FUT(cntr)
+        if event == 'hist_FUT'      : service_hist_FUT(cntr)
+        if event == 'hist_FUT_TODAY': service_hist_TODAY(cntr)
+        if event == 'cfg_PACK'      : service_cfg_PACK(cntr)
 
         if event == '__TIMEOUT__':
             if check_stat_DB(cntr)[0] == 0:
