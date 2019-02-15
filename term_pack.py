@@ -169,6 +169,7 @@ class Class_CONTR():
         self.db_path_FUT  = db_path_FUT       # path DB data & hist
         self.db_FUT_data  = Class_SQLite(self.db_path_FUT)
         self.dat_FUT_data = 0       # curv stamptime db_path_FUT
+        self.dat_FUT_hist = 0       # it's counter of minute
         #
         self.db_path_PACK = db_path_PACK       # path DB data & hist
         self.db_PACK      = Class_SQLite(self.db_path_PACK)
@@ -565,7 +566,7 @@ def check_stat_DB(cntr):
         cntr.dat_FUT_data = buf_stat_time
         return [1, '  first start  ']
     else:
-        if ((buf_stat_time - cntr.dat_FUT_data) < 55):
+        if ((buf_stat_time - cntr.dat_FUT_data) < 3):
             str_dt_file = datetime.fromtimestamp(cntr.dat_FUT_data).strftime('%H:%M:%S')
             return [3, str_dt_file + ' is not modifed 55 sec']
         else:
@@ -578,19 +579,25 @@ def update_db(cntr):
         error_msg_popup(cntr, 'copy_data_FUT => ', str(rq[1]), PopUp = False)
         return [1, 'Error copy_data_FUT => ']
 
-    rq  = copy_hist_FUT_today(cntr)
-    if rq[0] != 0:
-        error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]), PopUp = False)
-        return [1, 'Error copy_hist_FUT_today => ']
+    # if cntr.account.acc_date.minute has changed:
+    frm = '%d.%m.%Y %H:%M:%S'
+    dtt = datetime.strptime(str(cntr.account.acc_date), frm)
+    if cntr.dat_FUT_hist != dtt.minute:
+        cntr.dat_FUT_hist = dtt.minute
 
-    if len(cntr.hist_fut_today) != 0:
-        for i_pack, item in enumerate(cntr.koef_pack):
-            calc_hist_PACK_today(cntr, i_pack)
+        rq  = copy_hist_FUT_today(cntr)
+        if rq[0] != 0:
+            error_msg_popup(cntr, 'copy_hist_FUT_today => ', str(rq[1]), PopUp = False)
+            return [1, 'Error copy_hist_FUT_today => ']
 
-        # rewrite table hist_pack_today
-        if wr_hist_PACK_today(cntr)[0] != 0:
-            error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]), PopUp = False)
-            return [1, 'Error wr_hist_PACK_today => ']
+        if len(cntr.hist_fut_today) != 0:
+            for i_pack, item in enumerate(cntr.koef_pack):
+                calc_hist_PACK_today(cntr, i_pack)
+
+            # rewrite table hist_pack_today
+            if wr_hist_PACK_today(cntr)[0] != 0:
+                error_msg_popup(cntr, 'wr_hist_PACK_today => ', str(rq[1]), PopUp = False)
+                return [1, 'Error wr_hist_PACK_today => ']
     return [0, 'ok']
 #=======================================================================
 def main():
@@ -651,9 +658,9 @@ def main():
     while True:
         stroki = []
         if mode == 'auto':
-            event, values = window.Read(timeout=3500 )  # period 2,5 sec
+            event, values = window.Read(timeout=1500 )  # period 1,5 sec
         else:
-            event, values = window.Read(timeout=55000)  # period 55 sec)
+            event, values = window.Read(timeout=15000)  # period 15 sec)
         #print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
@@ -663,11 +670,25 @@ def main():
         if event == 'manual'    : mode = 'manual'
 
         if event == 'data_FUT'  :
-            print(sg.PopupScrolled(cntr.data_fut, auto_close=True))
-            stroki.append(frm_str.format('DATE    ', cntr.account.acc_date))
-            stroki.append(frm_str.format('PROF    ', str(cntr.account.acc_profit)))
-            stroki.append(frm_str.format('_GO_    ', str(cntr.account.acc_go)))
-            stroki.append(frm_str.format('DEPO    ', str(cntr.account.acc_depo)))
+            rq  = cntr.db_FUT_data.get_table_db_with('data_FUT')
+            if rq[0] == 0:
+                sg.Popup(
+                         'hist_FUT',
+                         '\n'.join(map(str,rq[1]))
+                        )
+
+        if event == 'cfg_PACK'  :
+            s_koef = []
+            for item in cntr.koef_pack :
+                s_jtem = ''
+                for jtem in item:
+                    if type(jtem) is list:  s_jtem += ' ; '.join(jtem) + '  '
+                    else:                   s_jtem += str(jtem) + '  '
+                s_koef.append(s_jtem)
+            sg.Popup(
+                     'cfg_PACK',
+                     '\n'.join(s_koef)
+                    )
 
         if event == '__TIMEOUT__':
             if check_stat_DB(cntr)[0] == 0:
