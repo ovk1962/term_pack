@@ -628,23 +628,26 @@ def service_hist_FUT(cntr):
             )
 #=======================================================================
 def service_hist_TODAY(cntr):
-    fut_F, fut_S, fut_L = cntr.hist_fut_today[0][1], cntr.hist_fut_today[1][1], cntr.hist_fut_today[-1][1]
-    pack_F, pack_S, pack_L = cntr.hist_pack_today[0][0], cntr.hist_pack_today[0][1], cntr.hist_pack_today[0][-1]
-    sg.Popup(
-             'hist_FUT/PACK   ',
-             '____________________________________________',
-             'len(hist_FUT)   ' + str(len(cntr.hist_fut_today)),
-             'first...' + fut_F.split('|')[0],
-             'second..' + fut_S.split('|')[0],
-             '........',
-             'last....' + fut_L.split('|')[0],
-             '____________________________________________',
-             'len(hist_pack)   ' + str(len(cntr.hist_pack_today[0])),
-             'first...' + pack_F.dt + '     ' + pack_F.tm,
-             'second..' + pack_S.dt + '     ' + pack_S.tm,
-             '........',
-             'last....' + pack_L.dt + '     ' + pack_L.tm,
-            )
+    if len(cntr.hist_fut_today) != 0:
+        fut_F, fut_S, fut_L = cntr.hist_fut_today[0][1], cntr.hist_fut_today[1][1], cntr.hist_fut_today[-1][1]
+        pack_F, pack_S, pack_L = cntr.hist_pack_today[0][0], cntr.hist_pack_today[0][1], cntr.hist_pack_today[0][-1]
+        sg.Popup(
+                 'hist_FUT/PACK   ',
+                 '____________________________________________',
+                 'len(hist_FUT)   ' + str(len(cntr.hist_fut_today)),
+                 'first...' + fut_F.split('|')[0],
+                 'second..' + fut_S.split('|')[0],
+                 '........',
+                 'last....' + fut_L.split('|')[0],
+                 '____________________________________________',
+                 'len(hist_pack)   ' + str(len(cntr.hist_pack_today[0])),
+                 'first...' + pack_F.dt + '     ' + pack_F.tm,
+                 'second..' + pack_S.dt + '     ' + pack_S.tm,
+                 '........',
+                 'last....' + pack_L.dt + '     ' + pack_L.tm,
+                )
+    else:
+        sg.Popup('hist_fut_today is EMPTY !')
 #=======================================================================
 def service_cfg_PACK(cntr):
     s_koef = []
