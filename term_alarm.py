@@ -241,23 +241,23 @@ def main():
                 ]
 
     sg_pack=[
-            '0 ___all FUT vs -120:MX',
-            '1 3:GZ,1:LK,1:RS,-60:MX',
-            '2 1:SR,6:VB,2:SP,-30:MX',
-            '3 4:HR,1:FS,2:AL,-30:MX',
-            '4 _____1:SR,2:SP,-20:MX',
-            '5 _____3:GZ,     -20:MX',
-            '6 _____1:LK,     -20:MX',
-            '7 _____1:RS,     -20:MX',
-            '8  __6:VB,    -10:MX',
-            '9  __4:HR,    -10:MX',
-            '10 __1:FS,    -10:MX',
-            '11 __2:AL,    -10:MX',
+            '0 ___all FUT vs -120:MX______',
+            '1 3:GZ,1:LK,1:RS,-60:MX_____',
+            '2 1:SR,6:VB,2:SP,-30:MX____',
+            '3 4:HR,1:FS,2:AL,-30:MX_____',
+            '4 _____1:SR,2:SP,-20:MX____',
+            '5 _____3:GZ,     -20:MX______',
+            '6 _____1:LK,     -20:MX______',
+            '7 _____1:RS,     -20:MX______',
+            '8  __6:VB,    -10:MX_________',
+            '9  __4:HR,    -10:MX_________',
+            '10 __1:FS,    -10:MX_________',
+            '11 __2:AL,    -10:MX_________',
             '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
             ]
 
     tab_PACK =  [
-                    [sg.T('{: <35}'.format(sg_pack[0]))],
+                    [sg.T('{: <35}'.format(sg_pack[0])), sg.T('{: <15}'.format('ask_0'), key='ask_0'), sg.T('{: <15}'.format('bid_0'), key='bid_0'), sg.T('{: <15}'.format('ema_0'), key='ema_0')],
                     [sg.T('{: <35}'.format(sg_pack[1]))],
                     [sg.T('{: <35}'.format(sg_pack[2]))],
                     [sg.T('{: <35}'.format(sg_pack[3]))],
@@ -318,6 +318,7 @@ def main():
         if event == 'About...'  : pass
 
         if event == '__TIMEOUT__':
+            # read tbl hist_pack_today and check alarms
             pass
 
         txt_frmt = '%Y.%m.%d  %H:%M:%S'
