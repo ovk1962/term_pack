@@ -231,6 +231,99 @@ def main():
 
     # init CONTR
     cntr = Class_CONTR(db_path_PACK, log_path)
+    init_cntr(cntr)
+
+    # init MENU
+    menu_def = [
+                ['Mode',    ['auto', 'manual', ],],
+                ['Help', 'About...'],
+                ['Exit', 'Exit']
+                ]
+
+    sg_pack=[
+            '0 ___all FUT vs -120:MX',
+            '1 3:GZ,1:LK,1:RS,-60:MX',
+            '2 1:SR,6:VB,2:SP,-30:MX',
+            '3 4:HR,1:FS,2:AL,-30:MX',
+            '4 _____1:SR,2:SP,-20:MX',
+            '5 _____3:GZ,     -20:MX',
+            '6 _____1:LK,     -20:MX',
+            '7 _____1:RS,     -20:MX',
+            '8  __6:VB,    -10:MX',
+            '9  __4:HR,    -10:MX',
+            '10 __1:FS,    -10:MX',
+            '11 __2:AL,    -10:MX',
+            '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
+            ]
+
+    tab_PACK =  [
+                    [sg.T('{: <35}'.format(sg_pack[0]))],
+                    [sg.T('{: <35}'.format(sg_pack[1]))],
+                    [sg.T('{: <35}'.format(sg_pack[2]))],
+                    [sg.T('{: <35}'.format(sg_pack[3]))],
+                    [sg.T('{: <35}'.format(sg_pack[4]))],
+                    [sg.T('{: <35}'.format(sg_pack[5]))],
+                    [sg.T('{: <35}'.format(sg_pack[6]))],
+                    [sg.T('{: <35}'.format(sg_pack[7]))],
+                    [sg.T('{: <35}'.format(sg_pack[8]))],
+                    [sg.T('{: <35}'.format(sg_pack[9]))],
+                    [sg.T('{: <35}'.format(sg_pack[10]))],
+                    [sg.T('{: <35}'.format(sg_pack[11]))],
+                    [sg.T('{: <35}'.format(sg_pack[12]))],
+                ]
+
+    tab_s_EMA = [
+                    [sg.T('{: <35}'.format(sg_pack[0]))],
+                    [sg.T('{: <35}'.format(sg_pack[1]))],
+                    [sg.T('{: <35}'.format(sg_pack[2]))],
+                    [sg.T('{: <35}'.format(sg_pack[3]))],
+                    [sg.T('{: <35}'.format(sg_pack[4]))],
+                    [sg.T('{: <35}'.format(sg_pack[5]))],
+                    [sg.T('{: <35}'.format(sg_pack[6]))],
+                    [sg.T('{: <35}'.format(sg_pack[7]))],
+                    [sg.T('{: <35}'.format(sg_pack[8]))],
+                    [sg.T('{: <35}'.format(sg_pack[9]))],
+                    [sg.T('{: <35}'.format(sg_pack[10]))],
+                    [sg.T('{: <35}'.format(sg_pack[11]))],
+                    [sg.T('{: <35}'.format(sg_pack[12]))],
+                ]
+
+    # Display data
+    sg.SetOptions(element_padding=(0,0))
+
+    layout = [
+                [sg.Menu(menu_def, tearoff=False, key='menu_def')],
+                [sg.TabGroup([[sg.Tab('PACK', tab_PACK), sg.Tab('s_EMA', tab_s_EMA)]], key='tab_group')],
+                [sg.T('',size=(60,2), font='Helvetica 8', key='txt_status'), sg.Quit(auto_size_button=True)],
+             ]
+
+    window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
+
+    mode = 'auto'
+    frm_str = '{: <15}{: ^15}'
+    # main cycle   -----------------------------------------------------
+    while True:
+        stroki = []
+        if mode == 'auto':
+            event, values = window.Read(timeout=2500 )  # period 2,5 sec
+        else:
+            event, values = window.Read(timeout=55000)  # period 55 sec)
+        #print('event = ', event, ' ..... values = ', values)
+
+        if event is None        : break
+        if event == 'Quit'      : break
+        if event == 'Exit'      : break
+        if event == 'auto'      : mode = 'auto'
+        if event == 'manual'    : mode = 'manual'
+        if event == 'About...'  : pass
+
+        if event == '__TIMEOUT__':
+            pass
+
+        txt_frmt = '%Y.%m.%d  %H:%M:%S'
+        stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
+        stts += 'event = ' + event
+        window.FindElement('txt_status').Update(stts)
     return
 
 if __name__ == '__main__':

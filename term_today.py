@@ -530,6 +530,7 @@ def main():
                 ['Help', 'About...'],
                 ['Exit', 'Exit']
                 ]
+
     tab_BALANCE =  [
                     [sg.T('{: ^12}'.format(str(cntr.term.account.acc_profit)), font='Helvetica 48', key='txt_bal')],
                    ]
