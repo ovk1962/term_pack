@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  term_graph.py
+#  term_alarm.py
 #
 #=======================================================================
 import os, sys, math, time
@@ -136,19 +136,11 @@ class Class_PACK():
         self.cnt_AMA_rnd = 0.0
 #=======================================================================
 class Class_CONTR():
-    ''' There are 2 history tables of FUT -
-    file_path_DATA  - file data from terminal QUIK
-    db_path_FUT     - TABLE s_hist_1, ask/bid from TERMINAL 1 today (TF = 15 sec)
-    db_path_FUT_arc - TABLE archiv,   ask/bid for period  (TF = 60 sec)
-    TABLE total_pack_archiv should update one time per DAY
-    TABLE total_pack_today  should update one time per MINUTE
-    '''
     def __init__(self, db_path_PACK, log_path):
         #
         self.db_path_PACK = db_path_PACK   # path DB archiv
         self.db_PACK      = Class_SQLite(db_path_PACK)
         #
-        self.hist_pack       = []   # массив котировок packets 60 s
         self.hist_pack_today = []   # массив котировок packets 60 s
         #
         self.log  = Class_LOGGER(log_path)
@@ -160,12 +152,6 @@ def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
         sg.PopupError(msg_log + msg_rq_1)
 #=======================================================================
 def init_cntr(cntr):
-    # read table hist_PACK
-    rq  = get_hist_PACK(cntr)
-    if rq[0] != 0:
-        error_msg_popup(cntr, 'get_hist_PACK => ', str(rq[1]))
-        return [1, 'get_hist_PACK => ' + str(rq[1])]
-
     # read table hist_PACK_today
     rq  = get_hist_PACK_today(cntr)
     if rq[0] != 0:
@@ -219,22 +205,6 @@ def conv_hist_PACK(arr_pack):
     #print(hist_pack[12][-1].EMAf)
     return [0, hist_pack]
 #=======================================================================
-def get_hist_PACK(cntr):
-    # read table hist_PACK from DB cntr.db_PACK
-    rq  = cntr.db_PACK.get_table_db_with('hist_PACK')
-    if rq[0] != 0:
-        error_msg_popup(cntr, 'Error hist_PACK! => ', str(rq[1]), PopUp = True)
-        return [1, rq[1]]
-    print(len(rq[1])   )
-    print(    rq[1][0] )
-    print(    rq[1][-1])
-    req = conv_hist_PACK(rq[1])
-    if req[0] == 0:
-        cntr.hist_pack  = req[1][:]
-    else:
-        cntr.hist_pack  = []
-    return [0, 'OK']
-#=======================================================================
 def get_hist_PACK_today(cntr):
     # read table hist_PACK_today from DB cntr.db_PACK
     rq  = cntr.db_PACK.get_table_db_with('hist_PACK_today')
@@ -252,205 +222,17 @@ def get_hist_PACK_today(cntr):
         cntr.hist_pack_today  = []
     return [0, 'OK']
 #=======================================================================
-def refresh_graph(cntr, values, graph):
-    graph.Erase()
-    y_pack, y_gr_1, y_gr_2, y_gr_12 , y_gr_22 = [], [], [], [], []
-    x_up, x_down   = [], []
-    f_mode = [1, 5, 15, 60]
-
-    if values['TF'][0]   == ' 1 min':   TF_mode = 0
-    elif values['TF'][0] == ' 5 min':   TF_mode = 1
-    elif values['TF'][0] == '15 min':   TF_mode = 2
-    elif values['TF'][0] == '60 min':   TF_mode = 3
-    else:                               TF_mode = 0
-
-    print('len = ', len(cntr.hist_pack))
-    for i_pack, item in enumerate(cntr.hist_pack):
-        y_pack.append([])
-        y_pack[i_pack] = [x for x in cntr.hist_pack[i_pack]]
-    if len(cntr.hist_pack_today) != 0:
-        for i_pack, item in enumerate(cntr.hist_pack_today):
-            y_pack[i_pack] += [x for x in cntr.hist_pack_today[i_pack]]
-
-    x_dt = [x.dt for x in y_pack[0]]
-    x_tm = [x.tm for x in y_pack[0]]
-
-    y_pack_1  = [int((y.pAsk+y.pBid)/2) for y in y_pack[0]]
-    y_emaf_1  = [y.EMAf_rnd             for y in y_pack[0]]
-    nom_PACK = int(values['PACK'].split(' ')[0])
-    y_pack_2  = [int((y.pAsk+y.pBid)/2) for y in y_pack[nom_PACK]]
-    y_emaf_2  = [y.EMAf_rnd             for y in y_pack[nom_PACK]]
-
-    len_y = len(y_pack_1)
-    sz_L, sz_W = graph.TopRight[0]-5, graph.TopRight[1]-5
-
-    x_scale = f_mode[TF_mode]
-    if len_y > x_scale * sz_L:   i_start = len_y - x_scale * sz_L
-    else:                        i_start = 0
-
-    for x in range(i_start, len_y-1, x_scale):
-        if x < len_y:
-            x_up.append(x_dt[x])
-            x_down.append(x_tm[x])
-            y_gr_1.append (y_pack_1[x])
-            y_gr_2.append (y_emaf_1[x])
-            y_gr_12.append(y_pack_2[x])
-            y_gr_22.append(y_emaf_2[x])
-
-    k_max = [max(y_gr_1), max(y_gr_2)]
-    index, value = max(enumerate(k_max), key=operator.itemgetter(1))
-    if   index == 0: k_max = 100 + max(y_gr_1)
-    elif index == 1: k_max = 100 + max(y_gr_2)
-
-    k_min = [min(y_gr_1), min(y_gr_2)]
-    index, value = min(enumerate(k_min), key=operator.itemgetter(1))
-    if   index == 0: k_min = min(y_gr_1) - 100
-    elif index == 1: k_min = min(y_gr_2) - 100
-
-    k_max = 100 * math.ceil(k_max/100)
-    k_min = 100 * int(k_min/100)
-    k_gr = sz_W / (k_max - k_min)
-
-    k_max_2 = [max(y_gr_12), max(y_gr_22)]
-    index, value = max(enumerate(k_max_2), key=operator.itemgetter(1))
-    if   index == 0: k_max_2 = 100 + max(y_gr_12)
-    elif index == 1: k_max_2 = 100 + max(y_gr_22)
-
-    k_min_2 = [min(y_gr_12), min(y_gr_22)]
-    index, value = min(enumerate(k_min_2), key=operator.itemgetter(1))
-    if   index == 0: k_min_2 = min(y_gr_12) - 100
-    elif index == 1: k_min_2 = min(y_gr_22) - 100
-
-    k_max_2 = 100 * math.ceil(k_max_2/100)
-    k_min_2 = 100 * int(k_min_2/100)
-    k_gr_2 = sz_W / (k_max_2 - k_min_2)
-
-    # Draw axis X
-    for x in range(100, len(x_up), 100):
-        graph.DrawLine((x,25), (x,sz_W-0), color='lightgrey')
-        graph.DrawText( x_up[x], (x,3), color='black')
-        graph.DrawText( x_down[x], (x,18), color='black')
-
-    # Draw axis Y
-    for y in range(50, sz_W , 50):
-        graph.DrawLine((25, y), (sz_L, y), color='lightgrey')
-        k_text = int(k_min + y / k_gr)
-        graph.DrawText(k_text , (15, y), color='green')
-
-    graph.DrawText('Delta Y = ' + str(k_max - k_min) ,
-        (35, sz_W - 5),
-        color='green')
-    graph.DrawText('Delta Y2 = ' + str(k_max_2 - k_min_2) ,
-        (sz_L - 55, sz_W - 5),
-        color='blue')
-
-    # Draw Graph Y1 (Left)
-    for i, item in enumerate(y_gr_1):
-        if i != 0:
-            prev = int((pr_item - k_min) * k_gr)
-            cur  = int((item - k_min) * k_gr)
-            graph.DrawLine((i-1, prev), (i, cur), color='green')
-        pr_item = item
-    for i, item in enumerate(y_gr_2):
-        cur  = int((item - k_min) * k_gr)
-        graph.DrawCircle((i, cur), 2, line_color='red', fill_color='red')
-    # Draw Graph Y2 (Right)
-    for i, item in enumerate(y_gr_12):
-        if i != 0:
-            prev = int((pr_item - k_min_2) * k_gr_2)
-            cur  = int((item - k_min_2) * k_gr_2)
-            graph.DrawLine((i-1, prev), (i, cur), color='blue')
-        pr_item = item
-    for i, item in enumerate(y_gr_22):
-        cur  = int((item - k_min_2) * k_gr_2)
-        graph.DrawCircle((i, cur), 2, line_color='lightblue', fill_color='lightblue')
-#=======================================================================
 def main():
     # init program config
     dirr, sub_dirr = os.path.abspath(os.curdir), '\\DB\\'
     path_PACK = 'term_pack.sqlite'
     db_path_PACK = dirr + sub_dirr + path_PACK
-    name_trm, log_path = 'TERM_GRAPH_1.00', dirr + '\\LOG\\term_graph_logger.log'
+    name_trm, log_path = 'TERM_ALARM_1.00', dirr + '\\LOG\\term_alarm_logger.log'
 
     # init CONTR
     cntr = Class_CONTR(db_path_PACK, log_path)
-    init_cntr(cntr)
-
-    #-------------------------------------------------------------------
-    # init PySimpleGUI
-    #-------------------------------------------------------------------
-    sz_W, sz_L = 500, 1000
-    sg.SetOptions(element_padding=(0,0))
-
-    grafic = sg.Graph(canvas_size=(sz_L, sz_W),
-                    graph_bottom_left=(  -5,     -5),
-                    graph_top_right=(sz_L+5, sz_W+5),
-                    background_color= 'lightyellow', #'white',
-                    key='graph')
-    sg_txt= [sg.T(' Just for sure MODE =        ',  font='Helvetica 8')]
-    sg_pack=[
-            '0 ___all FUT vs -120:MX',
-            '1 3:GZ,1:LK,1:RS,-60:MX',
-            '2 1:SR,6:VB,2:SP,-30:MX',
-            '3 4:HR,1:FS,2:AL,-30:MX',
-            '4 _____1:SR,2:SP,-20:MX',
-            '5 _____3:GZ,     -20:MX',
-            '6 _____1:LK,     -20:MX',
-            '7 _____1:RS,     -20:MX',
-            '8  __6:VB,    -10:MX',
-            '9  __4:HR,    -10:MX',
-            '10 __1:FS,    -10:MX',
-            '11 __2:AL,    -10:MX',
-            '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
-            ]
-    layout= [
-                [
-                 sg.Radio('AUTO',   "RADIO1", key='auto',   enable_events=True, default=True),
-                 sg.Radio('MANUAL', "RADIO1", key='manual', enable_events=True),
-                 sg.T(' ' * 15),
-                 sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '60 min'),
-                    size=(10, 2), default_values=' 1 min' , key='TF', bind_return_key=True),
-                 sg.T(' ' * 10),
-                 sg.InputOptionMenu((
-                    sg_pack[0],sg_pack[1],sg_pack[2],sg_pack[3],
-                    sg_pack[4],sg_pack[5],sg_pack[6],sg_pack[7],
-                    sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],
-                    sg_pack[12]
-                    ),
-                    key='PACK', default_value='1 3:GZ,1:LK,1:RS,-60:MX'),
-                 sg.T(' ' * 10),
-                 sg.Submit(),
-                 sg.T(' ' * 70),
-                 sg.Quit(auto_size_button=True)
-                 ],
-                [grafic]
-            ]
-    window = sg.Window(name_trm, grab_anywhere=True).Layout(layout).Finalize()
-    graph = window.FindElement('graph')
-    graph.Erase()
-    event, values = '', {'TF':[' 1 min']}
-    mode = 'manual'
-    tm_out = 52000
-    # main cycle   -----------------------------------------------------
-    while True:
-        if mode == 'auto':
-            event, values = window.Read(timeout=tm_out)  # period 52 sec
-        else:
-            event, values = window.Read()  # period 3 sec
-        print('event = ', event, ' ..... values = ', values)
-
-        if event is None        : break
-        if event == 'Quit'      : break
-
-        if event == 'auto'      : mode = 'auto'
-        if event == 'manual'    : mode = 'manual'
-        if event == 'Submit'    : refresh_graph(cntr, values, graph)
-
-        if event == '__TIMEOUT__'   :
-            pass
-
     return
-#=======================================================================
+
 if __name__ == '__main__':
     import sys
     sys.exit(main())
