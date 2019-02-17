@@ -241,52 +241,38 @@ def main():
                 ]
 
     sg_pack=[
-            '0 ___all FUT vs -120:MX______',
-            '1 3:GZ,1:LK,1:RS,-60:MX_____',
-            '2 1:SR,6:VB,2:SP,-30:MX____',
-            '3 4:HR,1:FS,2:AL,-30:MX_____',
-            '4 _____1:SR,2:SP,-20:MX____',
-            '5 _____3:GZ,     -20:MX______',
-            '6 _____1:LK,     -20:MX______',
-            '7 _____1:RS,     -20:MX______',
-            '8  __6:VB,    -10:MX_________',
-            '9  __4:HR,    -10:MX_________',
-            '10 __1:FS,    -10:MX_________',
-            '11 __2:AL,    -10:MX_________',
+            '0 all FUT   vs  -120:MX',
+            '1 3:GZ,1:LK,1:RS,-60:MX ',
+            '2 1:SR,6:VB,2:SP,-30:MX ',
+            '3 4:HR,1:FS,2:AL,-30:MX ',
+            '4  ____1:SR,2:SP,-20:MX ',
+            '5  ____3:GZ,     -20:MX ',
+            '6  ____1:LK,     -20:MX ',
+            '7  ____1:RS,     -20:MX ',
+            '8  __6:VB,    -10:MX ',
+            '9  __4:HR,    -10:MX ',
+            '10 __1:FS,    -10:MX ',
+            '11 __2:AL,    -10:MX ',
             '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
             ]
 
-    tab_PACK =  [
-                    [sg.T('{: <35}'.format(sg_pack[0])), sg.T('{: <15}'.format('ask_0'), key='ask_0'), sg.T('{: <15}'.format('bid_0'), key='bid_0'), sg.T('{: <15}'.format('ema_0'), key='ema_0')],
-                    [sg.T('{: <35}'.format(sg_pack[1]))],
-                    [sg.T('{: <35}'.format(sg_pack[2]))],
-                    [sg.T('{: <35}'.format(sg_pack[3]))],
-                    [sg.T('{: <35}'.format(sg_pack[4]))],
-                    [sg.T('{: <35}'.format(sg_pack[5]))],
-                    [sg.T('{: <35}'.format(sg_pack[6]))],
-                    [sg.T('{: <35}'.format(sg_pack[7]))],
-                    [sg.T('{: <35}'.format(sg_pack[8]))],
-                    [sg.T('{: <35}'.format(sg_pack[9]))],
-                    [sg.T('{: <35}'.format(sg_pack[10]))],
-                    [sg.T('{: <35}'.format(sg_pack[11]))],
-                    [sg.T('{: <35}'.format(sg_pack[12]))],
-                ]
+    tab_PACK = []
+    for i in range(13):
+        inputs = [sg.T(sg_pack[i], justification='left', size=(24, 1))]
+        inputs += [
+                    sg.In('{}_{}'.format(i,j),
+                    justification='right', size=(6, 1), pad=(1, 1),
+                    key=('p', i, j),
+                    do_not_clear=True)
+                    for j in range(4)
+                    ]
+        tab_PACK.append(inputs)
 
-    tab_s_EMA = [
-                    [sg.T('{: <35}'.format(sg_pack[0]))],
-                    [sg.T('{: <35}'.format(sg_pack[1]))],
-                    [sg.T('{: <35}'.format(sg_pack[2]))],
-                    [sg.T('{: <35}'.format(sg_pack[3]))],
-                    [sg.T('{: <35}'.format(sg_pack[4]))],
-                    [sg.T('{: <35}'.format(sg_pack[5]))],
-                    [sg.T('{: <35}'.format(sg_pack[6]))],
-                    [sg.T('{: <35}'.format(sg_pack[7]))],
-                    [sg.T('{: <35}'.format(sg_pack[8]))],
-                    [sg.T('{: <35}'.format(sg_pack[9]))],
-                    [sg.T('{: <35}'.format(sg_pack[10]))],
-                    [sg.T('{: <35}'.format(sg_pack[11]))],
-                    [sg.T('{: <35}'.format(sg_pack[12]))],
-                ]
+    tab_s_EMA = []
+    for i in range(13):
+        inputs = [sg.T('{}_{}'.format(i,j), justification='right', size=(8, 1), pad=(1, 1), key=('e', i, j))
+            for j in range(5)]
+        tab_s_EMA.append(inputs)
 
     # Display data
     sg.SetOptions(element_padding=(0,0))
@@ -315,7 +301,10 @@ def main():
         if event == 'Exit'      : break
         if event == 'auto'      : mode = 'auto'
         if event == 'manual'    : mode = 'manual'
-        if event == 'About...'  : pass
+        if event == 'About...'  :
+            location = ('p', 1, 0)
+            target_element = window.FindElement(location)
+            target_element.Update(sg_pack[0])
 
         if event == '__TIMEOUT__':
             # read tbl hist_pack_today and check alarms
