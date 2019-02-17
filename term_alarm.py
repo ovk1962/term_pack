@@ -141,7 +141,11 @@ class Class_CONTR():
         self.db_path_PACK = db_path_PACK   # path DB archiv
         self.db_PACK      = Class_SQLite(db_path_PACK)
         #
+        self.hist_pack       = []   # массив котировок packets 60 s
         self.hist_pack_today = []   # массив котировок packets 60 s
+        #
+        self.num_packs = 0
+        self.str_hist_last = []
         #
         self.log  = Class_LOGGER(log_path)
         self.log.wr_log_info('*** START ***')
@@ -152,12 +156,32 @@ def error_msg_popup(cntr, msg_log, msg_rq_1, PopUp = True):
         sg.PopupError(msg_log + msg_rq_1)
 #=======================================================================
 def init_cntr(cntr):
+    # read table hist_PACK
+    rq  = get_hist_PACK(cntr)
+    if rq[0] != 0:
+        error_msg_popup(cntr, 'hist_PACK => ', str(rq[1]))
+        return [1, 'hist_PACK => ' + str(rq[1])]
+
     # read table hist_PACK_today
     rq  = get_hist_PACK_today(cntr)
     if rq[0] != 0:
         error_msg_popup(cntr, 'hist_PACK_today => ', str(rq[1]))
         return [1, 'hist_PACK_today => ' + str(rq[1])]
 
+    cntr.num_packs = len(cntr.hist_pack)
+    if len(cntr.hist_pack_today) == 0:
+        for i_mdl in range(cntr.num_packs):
+            buf = cntr.hist_pack[i_mdl][-1]
+            cntr.str_hist_last.append(buf)
+        print('buf = ', len(cntr.str_hist_last))
+    else:
+        for i_mdl in range(cntr.num_packs):
+            buf = cntr.hist_pack_today[i_mdl][-1]
+            cntr.str_hist_last.append(cntr.hist_pack_today[i_mdl][-1])
+        print('buf = ', len(cntr.str_hist_last))
+
+    print('hist_PACK       = ', len(cntr.hist_pack))
+    print('hist_PACK_today = ', len(cntr.hist_pack_today))
     print('init_cntr - OK')
     return [0, 'OK']
 #=======================================================================
@@ -204,6 +228,22 @@ def conv_hist_PACK(arr_pack):
     #print(hist_pack[12][-1].pAsk)
     #print(hist_pack[12][-1].EMAf)
     return [0, hist_pack]
+#=======================================================================
+def get_hist_PACK(cntr):
+    # read table hist_PACK from DB cntr.db_PACK
+    rq  = cntr.db_PACK.get_table_db_with('hist_PACK')
+    if rq[0] != 0:
+        error_msg_popup(cntr, 'Error hist_PACK! => ', str(rq[1]), PopUp = True)
+        return [1, rq[1]]
+    print(len(rq[1])   )
+    print(    rq[1][0] )
+    print(    rq[1][-1])
+    req = conv_hist_PACK(rq[1])
+    if req[0] == 0:
+        cntr.hist_pack  = req[1][:]
+    else:
+        cntr.hist_pack  = []
+    return [0, 'OK']
 #=======================================================================
 def get_hist_PACK_today(cntr):
     # read table hist_PACK_today from DB cntr.db_PACK
@@ -259,19 +299,30 @@ def main():
     tab_PACK = []
     for i in range(13):
         inputs = [sg.T(sg_pack[i], justification='left', size=(24, 1))]
+        s = [
+            cntr.str_hist_last[i].pAsk,
+            cntr.str_hist_last[i].pBid,
+            cntr.str_hist_last[i].EMAf_rnd,
+            cntr.str_hist_last[i].cnt_EMAf_rnd
+            ]
         inputs += [
-                    sg.In('{}_{}'.format(i,j),
-                    justification='right', size=(6, 1), pad=(1, 1),
-                    key=('p', i, j),
-                    do_not_clear=True)
+                    sg.In('{}'.format(int(s[j])),
+                    justification='right', size=(7, 1), pad=(1, 1),
+                    key=('p', i, j),   do_not_clear=True)
                     for j in range(4)
                     ]
+        inputs += [sg.Checkbox((''), key = 'chk_box' + str(i))]
         tab_PACK.append(inputs)
 
     tab_s_EMA = []
     for i in range(13):
-        inputs = [sg.T('{}_{}'.format(i,j), justification='right', size=(8, 1), pad=(1, 1), key=('e', i, j))
-            for j in range(5)]
+        inputs = [sg.T(sg_pack[i], justification='left', size=(24, 1))]
+        inputs += [
+                    sg.T('{}_{}'.format(i,j),
+                    justification='right', size=(8, 1), pad=(1, 1),
+                    key=('e', i, j))
+                    for j in range(4)
+                    ]
         tab_s_EMA.append(inputs)
 
     # Display data
@@ -291,9 +342,9 @@ def main():
     while True:
         stroki = []
         if mode == 'auto':
-            event, values = window.Read(timeout=2500 )  # period 2,5 sec
+            event, values = window.Read(timeout=25000 )  # period 25 sec
         else:
-            event, values = window.Read(timeout=55000)  # period 55 sec)
+            event, values = window.Read(timeout=255000)
         #print('event = ', event, ' ..... values = ', values)
 
         if event is None        : break
@@ -308,7 +359,10 @@ def main():
 
         if event == '__TIMEOUT__':
             # read tbl hist_pack_today and check alarms
-            pass
+            if len(cntr.hist_pack_today) != 0:
+                for i_mdl in range(cntr.num_packs):
+                    buf = cntr.hist_pack_today[i_mdl][-1]
+                    cntr.str_hist_last.append(cntr.hist_pack_today[i_mdl][-1])
 
         txt_frmt = '%Y.%m.%d  %H:%M:%S'
         stts  = time.strftime(txt_frmt, time.localtime()) + '\n'
