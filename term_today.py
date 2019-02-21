@@ -673,7 +673,7 @@ def main():
 
         if event == '__TIMEOUT__':
             rq = read_parse_data_update(cntr)
-            #  rq = read_parse_data(cntr)
+            #rq = read_parse_data(cntr)
             if rq[0] != 0:
                 stroki.append(rq[1])
                 stroki.append(frm_str.format('DATE    ', cntr.term.account.acc_date))
