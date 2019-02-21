@@ -298,6 +298,29 @@ class Class_SQLite():
             r_write_tbl = [1, str(ex)]
         return r_write_tbl
     #-------------------------------------------------------------------
+    def rwr_tbl_wr_tbl(self, nm_tbl_rwr, nm_lst_rwr, nm_tbl_wr, nm_lst_wr):
+        ''' rewrite data from from terminal file  -------------------'''
+        '''   write data string into table DB  ----------------------'''
+        r_rewrt_tbl = [0, '']
+        try:
+            self.conn = sqlite3.connect(self.path_db)
+            self.cur = self.conn.cursor()
+            #
+            # rwr_tbl rewrite data from TERM  into table data_FUT
+            self.cur.execute("DELETE FROM " + nm_tbl_rwr)
+            self.cur.executemany("INSERT INTO " + nm_tbl_rwr + " VALUES(?)", nm_lst_rwr)
+            #
+            # wr_tbl write last string        into table hist_FUT_today
+            self.cur.executemany("INSERT INTO " + nm_tbl_wr + " VALUES(?, ?)", nm_lst_wr)
+            #
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            r_rewrt_tbl = [0, 'OK']
+        except Exception as ex:
+            r_rewrt_tbl = [1, str(ex)]
+        return r_rewrt_tbl
+    #-------------------------------------------------------------------
     def get_table_db_with(self, name_tbl):
         ''' read one table DB  --------------------------------------'''
         r_get_table_db = []
@@ -360,6 +383,48 @@ def get_table_data(cntr):
         err_msg = 'get_table_db_with(data) ' + rq[1]
         return [1, err_msg]
     return [0, 'ok']
+#=======================================================================
+# rwr_tbl_wr_tbl(nm_tbl_rwr, nm_lst_rwr, nm_tbl_wr, nm_lst_wr)
+def read_parse_data_update(cntr):
+    tm_s = time.localtime().tm_sec
+    if ((tm_s % 3) == 0):                       # 3 seconds period
+        # read DATA file
+        rq = cntr.term.rd_term()
+        if rq[0] != 0:
+            # there is not new DATA
+            return [1, rq[1]]
+
+        # parse string
+        rq = cntr.term.parse_str_in_file()
+        if rq[0] != 0:
+            err_msg = '_parse_str_in_file_(_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+
+        # prepair string for table hist_FUT_today
+        rq = cntr.term.prpr_str_hist()
+        if rq[0] != 0:
+            err_msg = 'prpr_str_hist(_) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+
+        # rewrite table DATA
+        duf_list_data = []
+        for j, jtem in enumerate(cntr.term.str_in_file):
+            buf = (jtem,)
+            duf_list_data.append(buf)
+        # add new string to table hist_FUT_today
+        duf_list_today = []
+        duf_list_today = [(cntr.term.dt_data, cntr.term.str_for_hist)]
+        #
+        rq = cntr.db_FUT_data.rwr_tbl_wr_tbl('data_FUT', duf_list_data, 'hist_FUT_today', duf_list_today)
+        if rq[0] != 0:
+            err_msg = 'read_parse_data_update(data_FUT_hist_FUT_today) ' + rq[1]
+            cntr.log.wr_log_error(err_msg)
+            return [1, rq[1]]
+    else:
+        return [100, 'waiting ...']
+    return [0, 'OK']
 #=======================================================================
 def read_parse_data(cntr):
     tm_s = time.localtime().tm_sec
@@ -607,7 +672,8 @@ def main():
                 stroki.append('Problem read TBL hist_FUT_today ')
 
         if event == '__TIMEOUT__':
-            rq = read_parse_data(cntr)
+            rq = read_parse_data_update(cntr)
+            #rq = read_parse_data(cntr)
             if rq[0] != 0:
                 stroki.append(rq[1])
                 stroki.append(frm_str.format('DATE    ', cntr.term.account.acc_date))
