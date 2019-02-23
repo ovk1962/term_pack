@@ -17,16 +17,28 @@ else:
 
 import types
 import datetime
+import time
 import textwrap
 import pickle
 import calendar
 from random import randint
 
+
+
+#  888888ba           .d88888b  oo                     dP           .88888.  dP     dP dP
+#  88    `8b          88.    "'                        88          d8'   `88 88     88 88
+# a88aaaa8P' dP    dP `Y88888b. dP 88d8b.d8b. 88d888b. 88 .d8888b. 88        88     88 88
+#  88        88    88       `8b 88 88'`88'`88 88'  `88 88 88ooood8 88   YP88 88     88 88
+#  88        88.  .88 d8'   .8P 88 88  88  88 88.  .88 88 88.  ... Y8.   .88 Y8.   .8P 88
+#  dP        `8888P88  Y88888P  dP dP  dP  dP 88Y888P' dP `88888P'  `88888'  `Y88888P' dP
+#                 .88                         88
+#             d8888P                          dP
+
+
 g_time_start = 0
 g_time_end = 0
 g_time_delta = 0
 
-import time
 
 
 def TimerStart():
@@ -64,6 +76,12 @@ def TimerStop():
 
 # Base64 encoded GIF file
 DEFAULT_BASE64_ICON = b'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'
+
+
+DEFAULT_BASE64_LOADING_GIF = b'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'
+
+
+
 
 if sys.version_info[0] >= 3:
     DEFAULT_WINDOW_ICON = DEFAULT_BASE64_ICON
@@ -1155,7 +1173,7 @@ class Text(Element):
         :param tooltip:
         :param visible:
         '''
-        self.DisplayText = text
+        self.DisplayText = str(text)
         self.TextColor = text_color if text_color else DEFAULT_TEXT_COLOR
         self.Justification = justification
         self.Relief = relief
@@ -1608,6 +1626,7 @@ class Button(Element):
             should_submit_window = False
             root = tk.Toplevel()
             root.title('Calendar Chooser')
+            root.wm_attributes("-topmost", 1)
             self.TKCal = TKCalendar(master=root, firstweekday=calendar.SUNDAY, target_element=target_element, close_when_chosen=self.CalendarCloseWhenChosen, default_date=self.DefaultDate_M_D_Y )
             self.TKCal.pack(expand=1, fill='both')
             root.update()
@@ -1851,6 +1870,11 @@ class Image(Element):
             print('* Warning... no image specified in Image Element! *')
         self.EnableEvents = enable_events
         self.RightClickMenu = right_click_menu
+        self.AnimatedFrames = None
+        self.CurrentFrameNumber = 0
+        self.TotalAnimatedFrames = 0
+        self.LastFrameTime = 0
+        self.Source = filename or data
 
         super().__init__(ELEM_TYPE_IMAGE, size=size, background_color=background_color, pad=pad, key=key,
                          tooltip=tooltip, visible=visible)
@@ -1874,6 +1898,49 @@ class Image(Element):
             self.tktext_label.pack_forget()
         elif visible is True:
             self.tktext_label.pack()
+
+    def UpdateAnimation(self, source, time_between_frames=0):
+        if self.Source != source:
+            self.AnimatedFrames = None
+            self.Source = source
+
+        if self.AnimatedFrames is None:
+            self.TotalAnimatedFrames = 0
+            self.AnimatedFrames = []
+            for i in range(1000):
+                if type(source) is not bytes:
+                    try:
+                        self.AnimatedFrames.append(tk.PhotoImage(file=source, format='gif -index %i' % (i)))
+                    except:
+                        break
+                else:
+                    try:
+                        self.AnimatedFrames.append(tk.PhotoImage(data=source, format='gif -index %i' % (i)))
+                    except:
+                        break
+                self.TotalAnimatedFrames += 1
+            self.LastFrameTime = time.time()
+            self.CurrentFrameNumber = 0
+        # show the frame
+
+        now = time.time()
+
+        if time_between_frames:
+            if (now - self.LastFrameTime) * 1000 > time_between_frames:
+                self.LastFrameTime = now
+                self.CurrentFrameNumber  = self.CurrentFrameNumber + 1 if self.CurrentFrameNumber+1< self.TotalAnimatedFrames else 0
+            else:                   # don't reshow the frame again if not time for new frame
+                return
+        else:
+            self.CurrentFrameNumber  = self.CurrentFrameNumber + 1 if self.CurrentFrameNumber+1< self.TotalAnimatedFrames else 0
+        image = self.AnimatedFrames[self.CurrentFrameNumber]
+        try:        # needed in case the window was closed with an "X"
+            self.tktext_label.configure(image=image, width=image.width(), heigh=image.height())
+        except:
+            pass
+
+
+
 
     def __del__(self):
         super().__del__()
@@ -1980,7 +2047,12 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_line(converted_point_from, converted_point_to, width=width, fill=color)
+        try:            # in case window was closed with an X
+            id = self._TKCanvas2.create_line(converted_point_from, converted_point_to, width=width, fill=color)
+        except:
+            id = None
+        return id
+
 
     def DrawPoint(self, point, size=2, color='black'):
         if point == (None, None):
@@ -1990,9 +2062,14 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_oval(converted_point[0] - size, converted_point[1] - size,
+        try:            # needed in case window was closed with an X
+            id =  self._TKCanvas2.create_oval(converted_point[0] - size, converted_point[1] - size,
                                            converted_point[0] + size, converted_point[1] + size, fill=color,
                                            outline=color)
+        except:
+            id = None
+        return
+
 
     def DrawCircle(self, center_location, radius, fill_color=None, line_color='black'):
         if center_location == (None, None):
@@ -2002,9 +2079,13 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_oval(converted_point[0] - radius, converted_point[1] - radius,
+        try:    # needed in case the window was closed with an X
+            id = self._TKCanvas2.create_oval(converted_point[0] - radius, converted_point[1] - radius,
                                            converted_point[0] + radius, converted_point[1] + radius, fill=fill_color,
                                            outline=line_color)
+        except:
+            id = None
+        return id
 
     def DrawOval(self, top_left, bottom_right, fill_color=None, line_color=None):
         converted_top_left = self._convert_xy_to_canvas_xy(top_left[0], top_left[1])
@@ -2013,8 +2094,13 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_oval(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
+        try:            # in case windows close with X
+            id = self._TKCanvas2.create_oval(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
                                            converted_bottom_right[1], fill=fill_color, outline=line_color)
+        except:
+            id = None
+
+        return id
 
     def DrawArc(self, top_left, bottom_right, extent, start_angle, style=None, arc_color='black'):
         converted_top_left = self._convert_xy_to_canvas_xy(top_left[0], top_left[1])
@@ -2024,9 +2110,13 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_arc(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
+        try:            # in case closed with X
+            id = self._TKCanvas2.create_arc(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
                                           converted_bottom_right[1], extent=extent, start=start_angle, style=tkstyle,
                                           outline=arc_color)
+        except:
+            id = None
+        return id
 
     def DrawRectangle(self, top_left, bottom_right, fill_color=None, line_color=None):
         converted_top_left = self._convert_xy_to_canvas_xy(top_left[0], top_left[1])
@@ -2035,8 +2125,13 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        return self._TKCanvas2.create_rectangle(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
+        try:            # in case closed with X
+            id = self._TKCanvas2.create_rectangle(converted_top_left[0], converted_top_left[1], converted_bottom_right[0],
                                                 converted_bottom_right[1], fill=fill_color, outline=line_color)
+        except:
+            id = None
+        return id
+
 
     def DrawText(self, text, location, color='black', font=None, angle=0):
         if location == (None, None):
@@ -2046,9 +2141,12 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        text_id = self._TKCanvas2.create_text(converted_point[0], converted_point[1], text=text, font=font, fill=color,
+        try:  # in case closed with X
+            id = self._TKCanvas2.create_text(converted_point[0], converted_point[1], text=text, font=font, fill=color,
                                               angle=angle)
-        return text_id
+        except:
+            id = None
+        return id
 
 
     def DrawImage(self, filename=None, data=None, location=(None, None), color='black', font=None, angle=0):
@@ -2068,8 +2166,11 @@ class Graph(Element):
             print('Call Window.Finalize() prior to this operation')
             return None
         self.Images.append(image)
-        text_id = self._TKCanvas2.create_image(converted_point, image=image, anchor=tk.NW)
-        return text_id
+        try:  # in case closed with X
+            id = self._TKCanvas2.create_image(converted_point, image=image, anchor=tk.NW)
+        except:
+            id = None
+        return id
 
 
 
@@ -2078,7 +2179,10 @@ class Graph(Element):
             print('*** WARNING - The Graph element has not been finalized and cannot be drawn upon ***')
             print('Call Window.Finalize() prior to this operation')
             return None
-        self._TKCanvas2.delete('all')
+        try:            # in case window was closed with X
+            self._TKCanvas2.delete('all')
+        except:
+            pass
 
 
     def DeleteFigure(self, id):
@@ -3317,7 +3421,7 @@ class TreeData(object):
 
     def __init__(self):
         self.tree_dict = {}
-        self.root_node = self.Node("", "", 'root', [])
+        self.root_node = self.Node("", "", 'root', [], None)
         self.tree_dict[""] = self.root_node
 
     def _AddNode(self, key, node):
@@ -3380,9 +3484,11 @@ class Window:
     NumOpenWindows = 0
     user_defined_icon = None
     hidden_master_root = None
+    animated_popup_dict = {}
+
 
     def __init__(self, title, default_element_size=DEFAULT_ELEMENT_SIZE, default_button_element_size=(None, None),
-                 auto_size_text=None, auto_size_buttons=None, location=(None, None), size=(None, None), element_padding=None, button_color=None, font=None,
+                 auto_size_text=None, auto_size_buttons=None, location=(None, None), size=(None, None), element_padding=None, margins=(None, None), button_color=None, font=None,
                  progress_bar_color=(None, None), background_color=None, border_depth=None, auto_close=False,
                  auto_close_duration=DEFAULT_AUTOCLOSE_TIME, icon=DEFAULT_WINDOW_ICON, force_toplevel=False,
                  alpha_channel=1, return_keyboard_events=False, use_default_focus=True, text_justification=None,
@@ -3471,6 +3577,7 @@ class Window:
         self.XFound = False
         self.ElementPadding = element_padding or DEFAULT_ELEMENT_PADDING
         self.RightClickMenu = right_click_menu
+        self.Margins = margins if margins != (None, None) else DEFAULT_MARGINS
 
     @classmethod
     def IncrementOpenCount(self):
@@ -3757,7 +3864,7 @@ class Window:
         FillFormWithValues(self, values_dict)
         return self
 
-    def FindElement(self, key, silent_on_error=None):
+    def FindElement(self, key, silent_on_error=False):
         element = _FindElementFromKeyInSubForm(self, key)
         if element is None:
             if not silent_on_error:
@@ -4660,13 +4767,34 @@ else:
                 i += 1
 
 
-# ------------------------------------------------------------------------------------------------------------------ #
-# ------------------------------------------------------------------------------------------------------------------ #
-# =====================================   TK CODE STARTS HERE ====================================================== #
-# ------------------------------------------------------------------------------------------------------------------ #
-# ------------------------------------------------------------------------------------------------------------------ #
+# 888    888      d8b          888
+# 888    888      Y8P          888
+# 888    888                   888
+# 888888 888  888 888 88888b.  888888  .d88b.  888d888
+# 888    888 .88P 888 888 "88b 888    d8P  Y8b 888P"
+# 888    888888K  888 888  888 888    88888888 888
+# Y88b.  888 "88b 888 888  888 Y88b.  Y8b.     888
+#  "Y888 888  888 888 888  888  "Y888  "Y8888  888
 
-def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
+# My crappy tkinter code starts here
+
+# ░░░░░░░░░░░█▀▀░░█░░░░░░
+# ░░░░░░▄▀▀▀▀░░░░░█▄▄░░░░
+# ░░░░░░█░█░░░░░░░░░░▐░░░
+# ░░░░░░▐▐░░░░░░░░░▄░▐░░░
+# ░░░░░░█░░░░░░░░▄▀▀░▐░░░
+# ░░░░▄▀░░░░░░░░▐░▄▄▀░░░░
+# ░░▄▀░░░▐░░░░░█▄▀░▐░░░░░
+# ░░█░░░▐░░░░░░░░▄░█░░░░░
+# ░░░█▄░░▀▄░░░░▄▀▐░█░░░░░
+# ░░░█▐▀▀▀░▀▀▀▀░░▐░█░░░░░
+# ░░▐█▐▄░░▀░░░░░░▐░█▄▄░░░
+# ░░░▀▀▄░░░░░░░░▄▐▄▄▄▀░░░
+# ░░░░░░░░░░░░░░░░░░░░░░░
+
+# ========================   TK CODE STARTS HERE ========================================= #
+
+def PackFormIntoFrame(form, containing_frame, toplevel_form):
     def CharWidthInPixels():
         return tkinter.font.Font().measure('A')  # single character width
 
@@ -4787,6 +4915,7 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
             # -------------------------  TEXT element  ------------------------- #
             elif element_type == ELEM_TYPE_TEXT:
                 # auto_size_text = element.AutoSizeText
+                element = element           # type: Text
                 display_text = element.DisplayText  # text to display
                 if auto_size_text is False:
                     width, height = element_size
@@ -4886,10 +5015,10 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                 if element.ImageFilename:  # if button has an image on it
                     tkbutton.config(highlightthickness=0)
                     photo = tk.PhotoImage(file=element.ImageFilename)
+                    if element.ImageSubsample:
+                        photo = photo.subsample(element.ImageSubsample)
                     if element.ImageSize != (None, None):
                         width, height = element.ImageSize
-                        if element.ImageSubsample:
-                            photo = photo.subsample(element.ImageSubsample)
                     else:
                         width, height = photo.width(), photo.height()
                     tkbutton.config(image=photo, compound=tk.CENTER, width=width, height=height)
@@ -4897,10 +5026,10 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                 if element.ImageData:  # if button has an image on it
                     tkbutton.config(highlightthickness=0)
                     photo = tk.PhotoImage(data=element.ImageData)
+                    if element.ImageSubsample:
+                        photo = photo.subsample(element.ImageSubsample)
                     if element.ImageSize != (None, None):
                         width, height = element.ImageSize
-                        if element.ImageSubsample:
-                            photo = photo.subsample(element.ImageSubsample)
                     else:
                         width, height = photo.width(), photo.height()
                     tkbutton.config(image=photo, compound=tk.CENTER, width=width, height=height)
@@ -5047,8 +5176,9 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                     # print(style_name)
                     combostyle = ttk.Style()
 
+                    unique_field = str(time.time()).replace('.','') + '.TCombobox.field'
                     # Creates a unique name for each field element(Sure there is a better way to do this)
-                    unique_field = str(datetime.datetime.today().timestamp()).replace('.','') + '.TCombobox.field'
+                    # unique_field = str(datetime.datetime.today().timestamp()).replace('.','') + '.TCombobox.field'
                     # unique_field = str(randint(1,50000000)) + '.TCombobox.field'
 
                     # print(unique_field)
@@ -5137,7 +5267,7 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                 listbox_frame = tk.Frame(tk_row_frame)
                 element.TKStringVar = tk.StringVar()
                 element.TKListbox = tk.Listbox(listbox_frame, height=element_size[1], width=width,
-                                               selectmode=element.SelectMode, font=font)
+                                               selectmode=element.SelectMode, font=font, exportselection=False)
                 for index, item in enumerate(element.Values):
                     element.TKListbox.insert(tk.END, item)
                     if element.DefaultValues is not None and item in element.DefaultValues:
@@ -5169,8 +5299,9 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                     AddMenuItem(top_menu, menu[1], element)
                     element.TKRightClickMenu = top_menu
                     element.TKListbox.bind('<Button-3>', element.RightClickMenuCallback)
-            # -------------------------  INPUT MULTI LINE element  ------------------------- #
+            # -------------------------  MULTILINE element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_MULTILINE:
+                element = element       # type: Multiline
                 default_text = element.DefaultText
                 width, height = element_size
                 element.TKText = tk.scrolledtext.ScrolledText(tk_row_frame, width=width, height=height, wrap='word',
@@ -5627,7 +5758,7 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
 
                 headings = element.ColumnHeadings if element.ColumnHeadings is not None else element.Values[0]
                 for i, heading in enumerate(headings):
-                    # treeview.heading(heading, text=heading)
+                    treeview.heading(heading, text=heading)
                     if element.AutoSizeColumns:
                         width = max(column_widths[i], len(heading))
                     else:
@@ -5659,6 +5790,7 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                     ttk.Style().configure("Treeview", foreground=element.TextColor)
                 if element.RowHeight is not None:
                     ttk.Style().configure("Treeview", rowheight=element.RowHeight)
+                ttk.Style().configure("Treeview", font=font)
                 # scrollable_frame.pack(side=tk.LEFT,  padx=elementpad[0], pady=elementpad[1], expand=True, fill='both')
                 treeview.bind("<<TreeviewSelect>>", element.treeview_selected)
                 if element.BindReturnKey:
@@ -5726,7 +5858,6 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                         except:
                             width = element.DefaultColumnWidth
                     treeview.column(heading, width=width * CharWidthInPixels(), anchor=anchor)
-
                 def add_treeview_data(node):
                     # print(f'Inserting {node.key} under parent {node.parent}')
                     if node.key != '':
@@ -5736,8 +5867,6 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
                             else:
                                 photo = tk.PhotoImage(file=node.icon)
                             node.photo = photo
-                            # except:
-                            #     self.photo = None
                             treeview.insert(node.parent, 'end', node.key, text=node.text, values=node.values, open=element.ShowExpanded, image=node.photo)
                         else:
                             treeview.insert(node.parent, 'end', node.key, text=node.text, values=node.values, open=element.ShowExpanded)
@@ -5837,14 +5966,14 @@ def PackFormIntoFrame(form, containing_frame, toplevel_form:Window):
         # ............................DONE WITH ROW pack the row of widgets ..........................#
         # done with row, pack the row of widgets
         # tk_row_frame.grid(row=row_num+2, sticky=tk.NW, padx=DEFAULT_MARGINS[0])
-        tk_row_frame.pack(side=tk.TOP, anchor='nw', padx=DEFAULT_MARGINS[0], expand=False)
+        tk_row_frame.pack(side=tk.TOP, anchor='nw', padx=toplevel_form.Margins[0], expand=False)
         if form.BackgroundColor is not None and form.BackgroundColor != COLOR_SYSTEM_DEFAULT:
             tk_row_frame.configure(background=form.BackgroundColor)
-        toplevel_form.TKroot.configure(padx=DEFAULT_MARGINS[0], pady=DEFAULT_MARGINS[1])
+        toplevel_form.TKroot.configure(padx=toplevel_form.Margins[0], pady=toplevel_form.Margins[1])
     return
 
 
-def ConvertFlexToTK(MyFlexForm:Window):
+def ConvertFlexToTK(MyFlexForm):
     master = MyFlexForm.TKroot
     master.title(MyFlexForm.Title)
     InitializeResults(MyFlexForm)
@@ -6043,7 +6172,7 @@ class QuickMeter(object):
         layout = []
         if self.orientation.lower().startswith('h'):
             col = []
-            col += [[T(arg)] for arg in args]
+            col += [[T(''.join(map(lambda x: str(x)+'\n',args)),key='_OPTMSG_')]] ### convert all *args into one string that can be updated
             col += [[T('', size=(30,10), key='_STATS_')],
                     [ProgressBar(max_value=self.max_value, orientation='h', key='_PROG_', size=self.size, bar_color=self.bar_color)],
                     [Cancel(button_color=self.button_color), Stretch()]]
@@ -6051,7 +6180,7 @@ class QuickMeter(object):
         else:
             col = [[ProgressBar(max_value=self.max_value, orientation='v', key='_PROG_', size=self.size, bar_color=self.bar_color)]]
             col2 = []
-            col2 += [[T(arg)] for arg in args]
+            col2 += [[T(''.join(map(lambda x: str(x)+'\n',args)),key='_OPTMSG_')]] ### convert all *args into one string that can be updated
             col2 += [[T('', size=(30,10), key='_STATS_')],
                      [Cancel(button_color=self.button_color), Stretch()]]
             layout = [Column(col), Column(col2)]
@@ -6060,11 +6189,12 @@ class QuickMeter(object):
 
         return self.window
 
-    def UpdateMeter(self, current_value, max_value):
+    def UpdateMeter(self, current_value, max_value,*args): ### support for *args when updating
         self.current_value = current_value
         self.max_value = max_value
         self.window.Element('_PROG_').UpdateBar(self.current_value, self.max_value)
         self.window.Element('_STATS_').Update('\n'.join(self.ComputeProgressStats()))
+        self.window.Element('_OPTMSG_').Update(value=''.join(map(lambda x: str(x)+'\n',args))) ###  update the string with the args
         event, values = self.window.Read(timeout=0)
         if event in('Cancel', None) or current_value >= max_value:
             self.window.Close()
@@ -6112,9 +6242,10 @@ def OneLineProgressMeter(title, current_value, max_value, key, *args, orientatio
     else:
         meter = QuickMeter.active_meters[key]
 
-    rc = meter.UpdateMeter(current_value, max_value)
+    rc = meter.UpdateMeter(current_value, max_value,*args) ### pass the *args to to UpdateMeter function
     OneLineProgressMeter.exit_reasons = getattr(OneLineProgressMeter,'exit_reasons', QuickMeter.exit_reasons)
     return rc == METER_OK
+
 
 def OneLineProgressMeterCancel(key):
     try:
@@ -6777,11 +6908,18 @@ def ObjToString(obj, extra='    '):
          for item in sorted(obj.__dict__)))
 
 
+######
+#     #   ####   #####   #    #  #####    ####
+#     #  #    #  #    #  #    #  #    #  #
+######   #    #  #    #  #    #  #    #   ####
+#        #    #  #####   #    #  #####        #
+#        #    #  #       #    #  #       #    #
+#         ####   #        ####   #        ####
+
+
 # ------------------------------------------------------------------------------------------------------------------ #
 # =====================================   Upper PySimpleGUI ======================================================== #
-#   Pre-built dialog boxes for all your needs    These are the "high level API calls                                 #
 # ------------------------------------------------------------------------------------------------------------------ #
-
 # ----------------------------------- The mighty Popup! ------------------------------------------------------------ #
 
 def Popup(*args, title=None, button_color=None, background_color=None, text_color=None, button_type=POPUP_BUTTONS_OK,
@@ -7383,7 +7521,42 @@ def PopupGetText(message, title=None, default_text='', password_char='', size=(N
     else:
         return input_values[0]
 
+# --------------------------- PopupAnimated ---------------------------
 
+def PopupAnimated(image_source, message=None, background_color=None, text_color=None, font=None, no_titlebar=True, grab_anywhere=True, keep_on_top=True, location=(None, None), alpha_channel=.8, time_between_frames=0):
+
+    if image_source is None:
+        for image in Window.animated_popup_dict:
+            window = Window.animated_popup_dict[image]
+            window.Close()
+        Window.animated_popup_dict = {}
+        return
+
+    if image_source not in Window.animated_popup_dict:
+        layout = [[Image(data=image_source, background_color=background_color, key='_IMAGE_',)],]
+        if message:
+            layout.append([Text(message, background_color=background_color, text_color=text_color, font=font)])
+
+        window = Window('Animated GIF', no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top,
+                           background_color=background_color, location=location, alpha_channel=alpha_channel, element_padding=(0,0), margins=(0,0)).Layout(layout).Finalize()
+        Window.animated_popup_dict[image_source] = window
+    else:
+        window = Window.animated_popup_dict[image_source]
+        window.Element('_IMAGE_').UpdateAnimation(image_source, time_between_frames=time_between_frames)
+
+    window.Refresh()        # call refresh instead of Read to save significant CPU time
+
+"""
+                       d8b
+                       Y8P
+
+88888b.d88b.   8888b.  888 88888b.
+888 "888 "88b     "88b 888 888 "88b
+888  888  888 .d888888 888 888  888
+888  888  888 888  888 888 888  888
+888  888  888 "Y888888 888 888  888
+
+"""
 
 def main():
     from random import randint
@@ -7415,7 +7588,7 @@ def main():
     ]
 
     frame2 = [
-        [Listbox(['Listbox 1', 'Listbox 2', 'Listbox 3'], size=(20, 5), bind_return_key=True)],
+        [Listbox(['Listbox 1', 'Listbox 2', 'Listbox 3'], size=(20, 5))],
         [Combo(['Combo item 1', ], size=(20, 3), text_color='red', background_color='red')],
         [Spin([1, 2, 3], size=(4, 3))],
     ]
@@ -7454,7 +7627,8 @@ def main():
         [Menu(menu_def)],
         [Text('You are running the PySimpleGUI.py file itself', font='ANY 15')],
         [Text('You should be importing it rather than running it', font='ANY 15')],
-        [Frame('Input Text Group', frame1, title_color='red'), ],
+        [Frame('Input Text Group', frame1, title_color='red'),
+         Image(data=DEFAULT_BASE64_LOADING_GIF, key='_IMAGE_')],
         [Frame('Multiple Choice Group', frame2, title_color='green'),
          Frame('Binary Choice Group', frame3, title_color='purple'),
          Frame('Variable Choice Group', frame4, title_color='blue')],
@@ -7486,7 +7660,7 @@ def main():
             graph_elem.DrawLine((i, 0), (i, randint(0, 300)), width=1, color='#{:06x}'.format(randint(0, 0xffffff)))
 
         window.FindElement('+PROGRESS+').UpdateBar(i % 800)
-
+        window.Element('_IMAGE_').UpdateAnimation(DEFAULT_BASE64_LOADING_GIF, time_between_frames=50)
         i += 1
         # TimerStop()
     window.Close()
