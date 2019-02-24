@@ -256,12 +256,13 @@ def refresh_graph(cntr, values, graph):
     graph.Erase()
     y_pack, y_gr_1, y_gr_2, y_gr_12 , y_gr_22 = [], [], [], [], []
     x_up, x_down   = [], []
-    f_mode = [1, 5, 15, 60]
+    f_mode = [1, 5, 15, 60, 120]
 
-    if values['TF'][0]   == ' 1 min':   TF_mode = 0
+    if   values['TF'][0] == ' 1 min':   TF_mode = 0
     elif values['TF'][0] == ' 5 min':   TF_mode = 1
     elif values['TF'][0] == '15 min':   TF_mode = 2
     elif values['TF'][0] == '60 min':   TF_mode = 3
+    elif values['TF'][0] == '120 min':  TF_mode = 4
     else:                               TF_mode = 0
 
     print('len = ', len(cntr.hist_pack))
@@ -401,26 +402,21 @@ def main():
             '9  __4:HR,    -10:MX',
             '10 __1:FS,    -10:MX',
             '11 __2:AL,    -10:MX',
-            '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
+            '12 1:GZ,1:RS,6:VB,4:HR,2:AL,-60:MX'
             ]
     layout= [
                 [
                  sg.Radio('AUTO',   "RADIO1", key='auto',   enable_events=True, default=True),
                  sg.Radio('MANUAL', "RADIO1", key='manual', enable_events=True),
                  sg.T(' ' * 15),
-                 sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '60 min'),
+                 sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '60 min', '120 min'),
                     size=(10, 2), default_values=' 1 min' , key='TF', bind_return_key=True),
                  sg.T(' ' * 10),
-                 sg.InputOptionMenu((
-                    sg_pack[0],sg_pack[1],sg_pack[2],sg_pack[3],
-                    sg_pack[4],sg_pack[5],sg_pack[6],sg_pack[7],
-                    sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],
-                    sg_pack[12]
-                    ),
-                    key='PACK', default_value='1 3:GZ,1:LK,1:RS,-60:MX'),
-                 sg.T(' ' * 10),
-                 sg.Submit(),
-                 sg.T(' ' * 70),
+                 sg.InputOptionMenu(( sg_pack[0],
+                    sg_pack[1],sg_pack[2],sg_pack[3],sg_pack[4],sg_pack[5],sg_pack[6],
+                    sg_pack[7],sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],sg_pack[12] ),
+                    key='PACK', default_value='12 1:GZ,1:RS,6:VB,4:HR,2:AL,-60:MX'),
+                 sg.T(' ' * 10),  sg.Submit(),  sg.T(' ' * 55),
                  sg.Quit(auto_size_button=True)
                  ],
                 [grafic]
