@@ -380,7 +380,7 @@ def main():
     #-------------------------------------------------------------------
     # init PySimpleGUI
     #-------------------------------------------------------------------
-    sz_W, sz_L = 500, 1000
+    sz_W, sz_L = 500, 1040
     sg.SetOptions(element_padding=(0,0))
 
     grafic = sg.Graph(canvas_size=(sz_L, sz_W),
