@@ -662,6 +662,56 @@ def service_cfg_PACK(cntr):
              '\n'.join(s_koef)
             )
 #=======================================================================
+def pre_pack_msg(cntr):
+    file_path_WWW    = 'D:\\file_www_A7.txt'
+    www_msg = [] # * 75
+    s_frm = '{: ^10}|{: ^10}|{: ^10}|{: ^10}|{: ^10}|{: ^10}\n'
+    try:
+        dt, tm = cntr.account.acc_date.split(' ')
+        www_msg.append(s_frm.format('trm_Time', dt, tm, 'cur_Time', time.strftime('%d.%m.%Y', time.localtime()), time.strftime('%H:%M:%S', time.localtime())))
+        www_msg.append(s_frm.format('Money', cntr.account.acc_balance,'---','---','---','---'))
+        www_msg.append(s_frm.format('Profit', cntr.account.acc_profit,'---','---','---','---'))
+        www_msg.append(s_frm.format('GO_fut', cntr.account.acc_go,    '---','---','---','---'))
+        www_msg.append(s_frm.format('******', 'margin','sRest','Ask','Bid','GO'))
+
+        for item in cntr.data_fut:
+            www_msg.append(s_frm.format(item.sP_code,
+                                        item.sVar_margin,
+                                        item.sRest,
+                                        item.sAsk,
+                                        item.sBid,
+                                        item.sFut_go))
+        www_msg.append(s_frm.format('******', '******','******','******','******','******'))
+
+        #if len(cntr.hist_pack_today[0]) > 4:
+        #    for i_mdl, item in enumerate(cntr.koef_pack):
+        #        www_msg.append(s_frm.format('pckt_' + str(i_mdl),
+        #                        str(cntr.hist_pack_today[i_mdl][-5].cnt_EMAf_rnd),
+        #                        str(cntr.hist_pack_today[i_mdl][-4].cnt_EMAf_rnd),
+        #                        str(cntr.hist_pack_today[i_mdl][-3].cnt_EMAf_rnd),
+        #                        str(cntr.hist_pack_today[i_mdl][-2].cnt_EMAf_rnd),
+        #                        str(cntr.hist_pack_today[i_mdl][-1].cnt_EMAf_rnd)))
+
+        #for i in www_msg:  print(i)
+        b_str = ''
+        b_str = ''.join(www_msg)
+
+        try:
+            with open(file_path_WWW, "w") as fh:
+                fh.write(b_str)
+        except Exception as ex:
+            err_msg = 'rewrite_WWW_file / ' + ex
+            cntr.log.wr_log_error(err_msg)
+            return [1, err_msg]
+
+    except Exception as ex:
+        print(ex)
+        err_msg = 'pre_pack_msg / ' + str(ex)
+        cntr.log.wr_log_error(err_msg)
+        return [1, err_msg]
+
+    return [0, 'ok']
+#=======================================================================
 def main():
     # init program config
     dirr, sub_dirr = os.path.abspath(os.curdir), '\\DB\\'
@@ -744,6 +794,7 @@ def main():
                     error_msg_popup(cntr, 'update_db => ', str(rq[1]), PopUp = False)
                     stroki.append('update_db => ERROR')
                 else:
+                    pre_pack_msg(cntr)
                     stroki.append(cntr.account.acc_date)
                     stroki.append(str(cntr.dat_FUT_data) + '   DB is modifed !')
             else:
