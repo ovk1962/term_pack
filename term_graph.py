@@ -428,7 +428,7 @@ def main():
                  sg.InputOptionMenu(( sg_pack[0],
                     sg_pack[1],sg_pack[2],sg_pack[3],sg_pack[4],sg_pack[5],sg_pack[6],
                     sg_pack[7],sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],sg_pack[12] ),
-                    key='PACK', default_value='12 1:GZ,1:RS,6:VB,4:HR,2:AL,-60:MX'),
+                    key='PACK', default_value='12 special vs -240:MX'),
                  sg.T(' ' * 10),  sg.Submit(),  sg.T(' ' * 55),
                  sg.Quit(auto_size_button=True)
                  ],

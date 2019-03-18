@@ -281,19 +281,32 @@ def main():
                 ]
 
     sg_pack=[
-            '0 all FUT   vs  -120:MX',
-            '1 3:GZ,1:LK,1:RS,-60:MX ',
-            '2 1:SR,6:VB,2:SP,-30:MX ',
-            '3 4:HR,1:FS,2:AL,-30:MX ',
-            '4  ____1:SR,2:SP,-20:MX ',
-            '5  ____3:GZ,     -20:MX ',
-            '6  ____1:LK,     -20:MX ',
-            '7  ____1:RS,     -20:MX ',
-            '8  __6:VB,    -10:MX ',
-            '9  __4:HR,    -10:MX ',
-            '10 __1:FS,    -10:MX ',
-            '11 __2:AL,    -10:MX ',
-            '12 1:LK,1:RS,4:HR,2:AL,-60:MX'
+            #'0 all FUT   vs  -120:MX',
+            #'1 3:GZ,1:LK,1:RS,-60:MX ',
+            #'2 1:SR,6:VB,2:SP,-30:MX ',
+            #'3 4:HR,1:FS,2:AL,-30:MX ',
+            #'4  ____1:SR,2:SP,-20:MX ',
+            #'5  ____3:GZ,     -20:MX ',
+            #'6  ____1:LK,     -20:MX ',
+            #'7  ____1:RS,     -20:MX ',
+            #'8  __6:VB,    -10:MX ',
+            #'9  __4:HR,    -10:MX ',
+            #'10 __1:FS,    -10:MX ',
+            #'11 __2:AL,    -10:MX ',
+            #'12 1:LK,1:RS,4:HR,2:AL,-60:MX'
+            '0 all FUT vs -350:MX',
+            '1 2:SR,1:SP,-30:MX',
+            '2 5:GZ,-30:MX',
+            '3 1:LK,-20:MX',
+            '4 2:RS,-30:MX',
+            '5 20:VB,-30:MX',
+            '6 14:HR,-30:MX',
+            '7 4:FS,-30:MX',
+            '8 1:TT,-30:MX',
+            '9 1:SG,1:SN-30:MX',
+            '10 8:AL,-30:MX',
+            '11 3:MT,-30:MX',
+            '12 special vs -240:MX'
             ]
 
     tab_PACK = []
@@ -354,8 +367,8 @@ def main():
         if event == 'manual'    : mode = 'manual'
         if event == 'About...'  :
             location = ('p', 1, 0)
-            target_element = window.FindElement(location)
-            target_element.Update(sg_pack[0])
+            target_element = window.FindElement(location).Update(sg_pack[0])
+            #target_element.Update(sg_pack[0])
 
         if event == '__TIMEOUT__':
             # read tbl hist_pack_today and check alarms
