@@ -256,13 +256,14 @@ def refresh_graph(cntr, values, graph):
     graph.Erase()
     y_pack, y_gr_1, y_gr_2, y_gr_12 , y_gr_22 = [], [], [], [], []
     x_up, x_down   = [], []
-    f_mode = [1, 5, 15, 60, 120]
+    f_mode = [1, 5, 15, 30, 60, 120]
 
     if   values['TF'][0] == ' 1 min':   TF_mode = 0
     elif values['TF'][0] == ' 5 min':   TF_mode = 1
     elif values['TF'][0] == '15 min':   TF_mode = 2
-    elif values['TF'][0] == '60 min':   TF_mode = 3
-    elif values['TF'][0] == '120 min':  TF_mode = 4
+    elif values['TF'][0] == '30 min':   TF_mode = 3
+    elif values['TF'][0] == '60 min':   TF_mode = 4
+    elif values['TF'][0] == '120 min':  TF_mode = 5
     else:                               TF_mode = 0
 
     print('len = ', len(cntr.hist_pack))
@@ -422,7 +423,7 @@ def main():
                  sg.Radio('AUTO',   "RADIO1", key='auto',   enable_events=True, default=True),
                  sg.Radio('MANUAL', "RADIO1", key='manual', enable_events=True),
                  sg.T(' ' * 15),
-                 sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '60 min', '120 min'),
+                 sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '30 min', '60 min', '120 min'),
                     size=(10, 2), default_values=' 1 min' , key='TF', bind_return_key=True),
                  sg.T(' ' * 10),
                  sg.InputOptionMenu(( sg_pack[0],
