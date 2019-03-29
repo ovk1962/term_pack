@@ -328,7 +328,7 @@ def refresh_graph(cntr, values, graph):
     k_gr_2 = sz_W / (k_max_2 - k_min_2)
 
     # Draw axis X
-    for x in range(100, len(x_up), 100):
+    for x in range(104, len(x_up), 104):
         graph.DrawLine((x,25), (x,sz_W-0), color='lightgrey')
         graph.DrawText( x_up[x], (x,3), color='black')
         graph.DrawText( x_down[x], (x,18), color='black')
