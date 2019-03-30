@@ -404,19 +404,19 @@ def main():
             #'10 __1:FS,    -10:MX',
             #'11 __2:AL,    -10:MX',
             #'12 1:GZ,1:RS,6:VB,4:HR,2:AL,-60:MX'
-            '0 all FUT vs -350:MX',
-            '1 2:SR,1:SP,-30:MX',
-            '2 5:GZ,-30:MX',
-            '3 1:LK,-20:MX',
-            '4 2:RS,-30:MX',
-            '5 20:VB,-30:MX',
-            '6 14:HR,-30:MX',
-            '7 4:FS,-30:MX',
-            '8 1:TT,-30:MX',
-            '9 1:SG,1:SN-30:MX',
-            '10 8:AL,-30:MX',
-            '11 3:MT,-30:MX',
-            '12 special vs -240:MX'
+            '0 all FUT vs -320:MX',
+            '1 2:SR,-10:MX',
+            '2 1:GZ,-10:MX',
+            '3 6:VB,-10:MX',
+            '4 5:HR,-10:MX',
+            '5 1:SP,-10:MX',
+            '6 1:FS,-10:MX',
+            '7 3:AL,-10:MX',
+            '8 1:MT,-10:MX',
+            '9 1:LK,-20:MX',
+            '10 1:RS,-20:MX',
+            '11 1:SG,-20:MX',
+            '12 special vs -80:MX'
             ]
     layout= [
                 [
@@ -429,7 +429,7 @@ def main():
                  sg.InputOptionMenu(( sg_pack[0],
                     sg_pack[1],sg_pack[2],sg_pack[3],sg_pack[4],sg_pack[5],sg_pack[6],
                     sg_pack[7],sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],sg_pack[12] ),
-                    key='PACK', default_value='12 special vs -240:MX'),
+                    key='PACK', default_value='12 special vs -80:MX'),
                  sg.T(' ' * 10),  sg.Submit(),  sg.T(' ' * 55),
                  sg.Quit(auto_size_button=True)
                  ],
