@@ -391,21 +391,8 @@ def main():
                     key='graph')
     sg_txt= [sg.T(' Just for sure MODE =        ',  font='Helvetica 8')]
     sg_pack=[
-            #'0 ___all FUT vs -120:MX',
-            #'1 3:GZ,1:LK,1:RS,-60:MX',
-            #'2 1:SR,6:VB,2:SP,-30:MX',
-            #'3 4:HR,1:FS,2:AL,-30:MX',
-            #'4 _____1:SR,2:SP,-20:MX',
-            #'5 _____3:GZ,     -20:MX',
-            #'6 _____1:LK,     -20:MX',
-            #'7 _____1:RS,     -20:MX',
-            #'8  __6:VB,    -10:MX',
-            #'9  __4:HR,    -10:MX',
-            #'10 __1:FS,    -10:MX',
-            #'11 __2:AL,    -10:MX',
-            #'12 1:GZ,1:RS,6:VB,4:HR,2:AL,-60:MX'
             '0 all FUT vs -320:MX',
-            '1 2:SR,-10:MX',
+            '1 1:SR,-10:MX',
             '2 1:GZ,-10:MX',
             '3 6:VB,-10:MX',
             '4 5:HR,-10:MX',
@@ -426,9 +413,7 @@ def main():
                  sg.Listbox(values=(' 1 min', ' 5 min', '15 min', '30 min', '60 min', '120 min'),
                     size=(10, 2), default_values=' 1 min' , key='TF', bind_return_key=True),
                  sg.T(' ' * 10),
-                 sg.InputOptionMenu(( sg_pack[0],
-                    sg_pack[1],sg_pack[2],sg_pack[3],sg_pack[4],sg_pack[5],sg_pack[6],
-                    sg_pack[7],sg_pack[8],sg_pack[9],sg_pack[10],sg_pack[11],sg_pack[12] ),
+                 sg.InputOptionMenu(sg_pack,
                     key='PACK', default_value='12 special vs -80:MX'),
                  sg.T(' ' * 10),  sg.Submit(),  sg.T(' ' * 55),
                  sg.Quit(auto_size_button=True)
