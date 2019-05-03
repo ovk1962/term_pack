@@ -68,7 +68,7 @@ class Class_TERM():
         self.data_fut = []      # list of Class_FUT() from trm
         self.account  = ''      # obj Class_ACCOUNT() from trm
         self.str_for_hist = ''  # str for hist table
-        self.delay_tm = 10      # min period to get data for DB (10 sec)
+        self.delay_tm = 9       # min period to get data for DB (10 sec)
         #
         self.sec_10_00 = 36000      # seconds from 00:00 to 10:00
         self.sec_14_00 = 50400      # seconds from 00:00 to 14:00
