@@ -402,8 +402,8 @@ def main():
             '8 1:MT,-10:MX',
             '9 1:LK,-20:MX',
             '10 1:RS,-20:MX',
-            '11 1:SG,-20:MX',
-            '12 special vs -80:MX'
+            '11 pack_6  vs -120:MX',
+            '12 pack_10 vs -120:MX'
             ]
     layout= [
                 [
@@ -414,7 +414,7 @@ def main():
                     size=(10, 2), default_values=' 1 min' , key='TF', bind_return_key=True),
                  sg.T(' ' * 10),
                  sg.InputOptionMenu(sg_pack,
-                    key='PACK', default_value='12 special vs -80:MX'),
+                    key='PACK', default_value='12 special vs -120:MX'),
                  sg.T(' ' * 10),  sg.Submit(),  sg.T(' ' * 55),
                  sg.Quit(auto_size_button=True)
                  ],
